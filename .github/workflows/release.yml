@@ -1,7 +1,6 @@
 name: Build and Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "v*.*.*"
@@ -11,15 +10,19 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.artifact_name }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: napihandler-linux
+            artifact_name: napihandler-linux-x86_64
+          - os: ubuntu-24.04-arm
+            artifact_name: napihandler-linux-arm64
+          - os: macos-13
+            artifact_name: napihandler-macos-x86_64
           - os: macos-latest
-            artifact_name: napihandler-macos
+            artifact_name: napihandler-macos-arm64
 
     steps:
       - name: Checkout
@@ -59,36 +62,37 @@ jobs:
       - name: Utwórz Release i dodaj pliki
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
           name: "napihandler ${{ github.ref_name }}"
           body: |
             ## napihandler ${{ github.ref_name }}
 
             ### Pobieranie
-            | System | Plik |
-            |--------|------|
-            | Linux  | `napihandler-linux` |
-            | macOS  | `napihandler-macos` |
+            | System | Architektura | Plik |
+            |--------|-------------|------|
+            | Linux  | x86_64      | `napihandler-linux-x86_64` |
+            | Linux  | arm64       | `napihandler-linux-arm64` |
+            | macOS  | x86_64 (Intel) | `napihandler-macos-x86_64` |
+            | macOS  | arm64 (Apple Silicon) | `napihandler-macos-arm64` |
 
             ### Instalacja
             ```bash
-            # Linux
-            chmod +x napihandler-linux
-            sudo mv napihandler-linux /usr/local/bin/napihandler
+            # Przykład dla Linux x86_64
+            chmod +x napihandler-linux-x86_64
+            sudo mv napihandler-linux-x86_64 /usr/local/bin/napihandler
 
-            # macOS
-            chmod +x napihandler-macos
-            sudo mv napihandler-macos /usr/local/bin/napihandler
+            # Przykład dla macOS Apple Silicon
+            chmod +x napihandler-macos-arm64
+            sudo mv napihandler-macos-arm64 /usr/local/bin/napihandler
             ```
 
             ### Rejestracja protokołu napiprojekt:
             ```bash
-            # Linux
-            python3 build/install_linux.py
-
-            # macOS
-            python3 build/install_macos.py
+            napihandler --register
             ```
           files: |
-            dist/napihandler-linux/napihandler-linux
-            dist/napihandler-macos/napihandler-macos
+            dist/napihandler-linux-x86_64/napihandler-linux-x86_64
+            dist/napihandler-linux-arm64/napihandler-linux-arm64
+            dist/napihandler-macos-x86_64/napihandler-macos-x86_64
+            dist/napihandler-macos-arm64/napihandler-macos-arm64
           fail_on_unmatched_files: true
