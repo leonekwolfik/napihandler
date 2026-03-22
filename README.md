@@ -2,13 +2,21 @@
 
 Pobiera napisy z [NapiProjekt](http://napiprojekt.pl) przez protokół `napiprojekt:` na macOS i Linux.
 
-## Wymagania
+## Budowanie binarki
 
 ```bash
-pip3 install requests
+pip3 install pyinstaller requests
+python3 build/build.py
 ```
 
-## Instalacja
+Binarka trafia do `dist/napihandler` — jeden plik, zero zależności.
+
+Aby zainstalować globalnie:
+```bash
+sudo cp dist/napihandler /usr/local/bin/napihandler
+```
+
+## Rejestracja protokołu napiprojekt:
 
 ### macOS
 ```bash
@@ -32,21 +40,16 @@ Po instalacji kliknięcie w link `napiprojekt:HASH` automatycznie pobierze napis
 ### CLI
 ```bash
 # URI ze strony
-python3 napihandler.py "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"
+napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"
 
 # Sam hash MD5
-python3 napihandler.py 07a1046ccddd59c0ffc7932331a16d63
+napihandler 07a1046ccddd59c0ffc7932331a16d63
 
-# Inne język
-python3 napihandler.py "napiprojekt:07a1046ccddd59c0ffc7932331a16d63" --jezyk EN
+# Inny język
+napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63" --jezyk EN
 
 # Własna nazwa pliku
-python3 napihandler.py "napiprojekt:07a1046ccddd59c0ffc7932331a16d63" -o film.srt
-```
-
-Po dodaniu do PATH (przez install_linux.py / install_macos.py):
-```bash
-napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"
+napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63" -o film.srt
 ```
 
 ---
@@ -58,8 +61,11 @@ napihandler/
 ├── src/
 │   └── napihandler.py      # główny skrypt
 ├── build/
-│   ├── install_macos.py    # instalator dla macOS
-│   └── install_linux.py    # instalator dla Linux
+│   ├── build.py            # buduje binarkę przez PyInstaller
+│   ├── install_macos.py    # rejestruje protokół na macOS
+│   └── install_linux.py    # rejestruje protokół na Linux
+├── dist/
+│   └── napihandler         # binarka (po zbudowaniu)
 └── README.md
 ```
 
