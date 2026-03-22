@@ -2,42 +2,30 @@
 
 Pobiera napisy z [NapiProjekt](http://napiprojekt.pl) przez protokół `napiprojekt:` na macOS i Linux.
 
-## Budowanie binarki
+## Instalacja
+
+Pobierz binarkę z [Releases](../../releases) i umieść w PATH:
 
 ```bash
-pip3 install pyinstaller requests
-python3 build/build.py
+# Linux / macOS
+chmod +x napihandler-linux   # lub napihandler-macos
+sudo mv napihandler-linux /usr/local/bin/napihandler
 ```
 
-Binarka trafia do `dist/napihandler` — jeden plik, zero zależności.
+Jednorazowo zarejestruj protokół w systemie:
 
-Aby zainstalować globalnie:
 ```bash
-sudo cp dist/napihandler /usr/local/bin/napihandler
+napihandler --register
 ```
-
-## Rejestracja protokołu napiprojekt:
-
-### macOS
-```bash
-python3 build/install_macos.py
-```
-Tworzy aplikację `NapiHandler.app` w `~/Applications` i rejestruje protokół `napiprojekt:` w systemie.
-
-### Linux
-```bash
-python3 build/install_linux.py
-```
-Tworzy plik `.desktop` i rejestruje protokół przez `xdg-mime`. Działa z GNOME, KDE, XFCE i innymi.
-
----
 
 ## Użycie
 
 ### Kliknięcie w link na stronie NapiProjekt
-Po instalacji kliknięcie w link `napiprojekt:HASH` automatycznie pobierze napisy do bieżącego katalogu.
+Po rejestracji kliknięcie w link `napiprojekt:HASH` automatycznie pobierze napisy
+do bieżącego katalogu.
 
 ### CLI
+
 ```bash
 # URI ze strony
 napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"
@@ -52,20 +40,25 @@ napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63" --jezyk EN
 napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63" -o film.srt
 ```
 
----
+## Budowanie ze źródeł
+
+```bash
+pip3 install pyinstaller requests
+python3 build/build.py
+```
+
+Binarka trafia do `dist/napihandler`.
 
 ## Struktura projektu
 
 ```
 napihandler/
 ├── src/
-│   └── napihandler.py      # główny skrypt
+│   └── napihandler.py   # główny skrypt (logika + rejestracja protokołu)
 ├── build/
-│   ├── build.py            # buduje binarkę przez PyInstaller
-│   ├── install_macos.py    # rejestruje protokół na macOS
-│   └── install_linux.py    # rejestruje protokół na Linux
+│   └── build.py         # buduje binarkę przez PyInstaller
 ├── dist/
-│   └── napihandler         # binarka (po zbudowaniu)
+│   └── napihandler      # binarka (po zbudowaniu)
 └── README.md
 ```
 
