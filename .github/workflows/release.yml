@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: napihandler-linux
+          - os: macos-latest
+            artifact_name: napihandler-macos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ustaw Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Zainstaluj zależności
+        run: pip install pyinstaller requests
+
+      - name: Zbuduj binarkę
+        run: python3 build/build.py
+
+      - name: Zmień nazwę binarki
+        run: mv dist/napihandler dist/${{ matrix.artifact_name }}
+
+      - name: Uploaduj artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
+
+  release:
+    name: Utwórz Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobierz artefakty
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Utwórz Release i dodaj pliki
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "napihandler ${{ github.ref_name }}"
+          body: |
+            ## napihandler ${{ github.ref_name }}
+
+            ### Pobieranie
+            | System | Plik |
+            |--------|------|
+            | Linux  | `napihandler-linux` |
+            | macOS  | `napihandler-macos` |
+
+            ### Instalacja
+            ```bash
+            # Linux
+            chmod +x napihandler-linux
+            sudo mv napihandler-linux /usr/local/bin/napihandler
+
+            # macOS
+            chmod +x napihandler-macos
+            sudo mv napihandler-macos /usr/local/bin/napihandler
+            ```
+
+            ### Rejestracja protokołu napiprojekt:
+            ```bash
+            # Linux
+            python3 build/install_linux.py
+
+            # macOS
+            python3 build/install_macos.py
+            ```
+          files: |
+            dist/napihandler-linux/napihandler-linux
+            dist/napihandler-macos/napihandler-macos
+          fail_on_unmatched_files: true
