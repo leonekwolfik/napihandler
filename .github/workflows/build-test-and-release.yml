@@ -35,15 +35,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Ustaw Python
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version-file: ".python-version"
 
-      - name: Zainstaluj zależności
+      - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Zbuduj binarkę
+      - name: Build binary
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -52,7 +52,7 @@ jobs:
             python3 build/build.py
           fi
 
-      - name: Zmień nazwę binarki
+      - name: Rename binary
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -65,7 +65,7 @@ jobs:
             mv dist/napihandler dist/${{ matrix.artifact_name }}
           fi
 
-      - name: Testuj binarkę (sam hash)
+      - name: Test binary (hash only)
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -74,13 +74,13 @@ jobs:
             ./dist/${{ matrix.artifact_name }} 07a1046ccddd59c0ffc7932331a16d63
           fi
 
-      - name: Sprawdź plik srt
+      - name: Check SRT file
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            if [ -f *.srt ]; then echo "Plik srt znaleziony"; else exit 1; fi
+            if [ -f *.srt ]; then echo "SRT file found"; else exit 1; fi
           else
-            test -f *.srt && echo "Plik srt znaleziony" || exit 1
+            test -f *.srt && echo "SRT file found" || exit 1
           fi
           if [ "$RUNNER_OS" == "Windows" ]; then
             del *.srt 2>nul || true
@@ -88,7 +88,7 @@ jobs:
             rm -f *.srt
           fi
 
-      - name: Testuj binarkę (napiprojekt:hash)
+      - name: Test binary (napiprojekt:hash)
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -97,13 +97,13 @@ jobs:
             ./dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
           fi
 
-      - name: Sprawdź plik srt
+      - name: Check SRT file
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            if [ -f *.srt ]; then echo "Plik srt znaleziony"; else exit 1; fi
+            if [ -f *.srt ]; then echo "SRT file found"; else exit 1; fi
           else
-            test -f *.srt && echo "Plik srt znaleziony" || exit 1
+            test -f *.srt && echo "SRT file found" || exit 1
           fi
           if [ "$RUNNER_OS" == "Windows" ]; then
             del *.srt 2>nul || true
@@ -111,7 +111,7 @@ jobs:
             rm -f *.srt
           fi
 
-      - name: Testuj rejestrację protokołu
+      - name: Test protocol registration
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -121,18 +121,18 @@ jobs:
           fi
 
   release:
-    name: Utwórz Release
+    name: Create Release
     needs: build-and-test
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Pobierz artefakty
+      - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
           path: dist/
 
-      - name: Utwórz Release i dodaj pliki
+      - name: Create Release and add files
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -140,8 +140,8 @@ jobs:
           body: |
             ## napihandler ${{ github.ref_name }}
 
-            ### Pobieranie
-            | System | Architektura | Plik |
+            ### Downloads
+            | System | Architecture | File |
             |--------|-------------|------|
             | Linux  | x86_64      | `napihandler-linux-x86_64` |
             | Linux  | arm64       | `napihandler-linux-arm64` |
@@ -149,18 +149,18 @@ jobs:
             | macOS  | arm64 (Apple Silicon) | `napihandler-macos-arm64` |
             | Windows| x86_64      | `napihandler-windows-x86_64.exe` |
 
-            ### Instalacja
+            ### Installation
             ```bash
-            # Przykład dla Linux x86_64
+            # Example for Linux x86_64
             chmod +x napihandler-linux-x86_64
             sudo mv napihandler-linux-x86_64 /usr/local/bin/napihandler
 
-            # Przykład dla macOS Apple Silicon
+            # Example for macOS Apple Silicon
             chmod +x napihandler-macos-arm64
             sudo mv napihandler-macos-arm64 /usr/local/bin/napihandler
 
-            # Przykład dla Windows
-            # Umieść napihandler-windows-x86_64.exe w wybranym folderze
+            # Example for Windows
+            # Place napihandler-windows-x86_64.exe in your chosen folder
             ```
           files: |
             dist/napihandler-linux-x86_64/napihandler-linux-x86_64
