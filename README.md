@@ -1,6 +1,6 @@
 # napihandler
 
-Pobiera napisy z [NapiProjekt](http://napiprojekt.pl) przez protokół `napiprojekt:` na macOS i Linux.
+Pobiera napisy z [NapiProjekt](http://napiprojekt.pl) przez protokół `napiprojekt:` na macOS, Linux i Windows.
 
 ## Instalacja
 
@@ -10,6 +10,9 @@ Pobierz binarkę z [Releases](../../releases) i umieść w PATH:
 # Linux / macOS
 chmod +x napihandler-linux   # lub napihandler-macos
 sudo mv napihandler-linux /usr/local/bin/napihandler
+
+# Windows
+# Umieść napihandler-windows-x86_64.exe w wybranym folderze
 ```
 
 Jednorazowo zarejestruj protokół w systemie:

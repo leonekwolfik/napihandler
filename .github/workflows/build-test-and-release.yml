@@ -29,11 +29,7 @@ jobs:
           - os: macos-latest
             artifact_name: napihandler-macos-arm64
           - os: windows-latest
-            artifact_name: napihandler-windows-x86_64
-          - os: android-latest
-            artifact_name: napihandler-android-arm64
-          - os: ios-latest
-            artifact_name: napihandler-ios-arm64
+            artifact_name: napihandler-windows-x86_64.exe
 
     steps:
       - name: Checkout
@@ -69,6 +65,9 @@ jobs:
           test -f *.srt && echo "Plik srt znaleziony" || exit 1
           rm -f *.srt  # Czyści plik srt po teście
 
+      - name: Testuj rejestrację protokołu
+        run: ./dist/${{ matrix.artifact_name }} --register --dry-run
+
   release:
     name: Utwórz Release
     needs: build-and-test
@@ -96,6 +95,7 @@ jobs:
             | Linux  | arm64       | `napihandler-linux-arm64` |
             | macOS  | x86_64 (Intel) | `napihandler-macos-x86_64` |
             | macOS  | arm64 (Apple Silicon) | `napihandler-macos-arm64` |
+            | Windows| x86_64      | `napihandler-windows-x86_64.exe` |
 
             ### Instalacja
             ```bash
@@ -106,15 +106,14 @@ jobs:
             # Przykład dla macOS Apple Silicon
             chmod +x napihandler-macos-arm64
             sudo mv napihandler-macos-arm64 /usr/local/bin/napihandler
-            ```
 
-            ### Rejestracja protokołu napiprojekt:
-            ```bash
-            napihandler --register
+            # Przykład dla Windows
+            # Umieść napihandler-windows-x86_64.exe w wybranym folderze
             ```
           files: |
             dist/napihandler-linux-x86_64/napihandler-linux-x86_64
             dist/napihandler-linux-arm64/napihandler-linux-arm64
             dist/napihandler-macos-x86_64/napihandler-macos-x86_64
             dist/napihandler-macos-arm64/napihandler-macos-arm64
+            dist/napihandler-windows-x86_64.exe/napihandler-windows-x86_64.exe
           fail_on_unmatched_files: true

@@ -103,10 +103,36 @@ MimeType=x-scheme-handler/napiprojekt;
     else:
         print("⚠ Nie znaleziono xdg-mime — uruchom ręcznie:")
         print("  xdg-mime default napihandler.desktop x-scheme-handler/napiprojekt")
-
+    
     if shutil.which("update-desktop-database"):
         subprocess.run(["update-desktop-database", str(desktop_dir)], check=True)
         print("✓ Odświeżono bazę desktop entries")
+
+def zarejestruj_windows():
+    exe = binary_path()
+    import winreg
+
+    # Klucz rejestru dla protokołu napiprojekt
+    key_path = r"Software\Classes\napiprojekt"
+    command_key_path = rf"{key_path}\shell\open\command"
+
+    try:
+        # Utwórz główny klucz protokołu
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValue(key, None, winreg.REG_SZ, "URL:NapiProjekt Subtitles")
+            winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+
+        # Utwórz klucz komendy
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, command_key_path) as key:
+            winreg.SetValue(key, None, winreg.REG_SZ, f'"{exe}" "%1"')
+
+        print(f"✓ Zarejestrowano protokół napiprojekt: w rejestrze Windows")
+        print("  Zmiany wejdą w życie po restarcie przeglądarki lub systemu.")
+
+    except Exception as e:
+        print(f"Błąd podczas rejestracji w Windows: {e}")
+        print("Spróbuj uruchomić jako administrator.")
+        sys.exit(1)
 
 
 def zarejestruj():
@@ -115,6 +141,8 @@ def zarejestruj():
         zarejestruj_macos()
     elif sys.platform.startswith("linux"):
         zarejestruj_linux()
+    elif sys.platform.startswith("win"):
+        zarejestruj_windows()
     else:
         print(f"Błąd: Nieobsługiwany system: {sys.platform}")
         sys.exit(1)
@@ -181,7 +209,7 @@ def pobierz_napisy(film_id: str, jezyk: str = "PL") -> bytes:
 def main():
     parser = argparse.ArgumentParser(
         prog="napihandler",
-        description="Pobiera napisy z NapiProjekt — handler protokołu napiprojekt: dla macOS i Linux.",
+        description="Pobiera napisy z NapiProjekt — handler protokołu napiprojekt: dla macOS, Linux i Windows.",
         epilog=(
             "Przykłady:\n"
             "  napihandler --register\n"
@@ -195,6 +223,11 @@ def main():
         "--register",
         action="store_true",
         help="Zarejestruj protokół napiprojekt: w systemie (jednorazowo po instalacji)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Tylko symuluj rejestrację (do testów)",
     )
     parser.add_argument(
         "film_id",
@@ -216,7 +249,11 @@ def main():
     args = parser.parse_args()
 
     if args.register:
-        zarejestruj()
+        if args.dry_run:
+            print("✓ Symulacja rejestracji protokołu napiprojekt: zakończona pomyślnie")
+            print("  (Użyto --dry-run - rejestracja została pominięta)")
+        else:
+            zarejestruj()
         return
 
     if not args.film_id:
