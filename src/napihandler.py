@@ -74,8 +74,8 @@ URI=$(echo "$1" | sed 's|napiprojekt://|napiprojekt:|')
     )
     subprocess.run([lsregister, "-f", str(app_dir)], check=True)
 
-    print(f"✓ Utworzono: {app_dir}")
-    print("✓ Zarejestrowano protokół napiprojekt: w systemie")
+    print(f"OK: Utworzono: {app_dir}")
+    print("OK: Zarejestrowano protokół napiprojekt: w systemie")
     print("  Może być konieczne wylogowanie lub restart Findera.")
 
 
@@ -93,7 +93,7 @@ Type=Application
 NoDisplay=true
 MimeType=x-scheme-handler/napiprojekt;
 """)
-    print(f"✓ Utworzono: {desktop_file}")
+    print(f"OK: Utworzono: {desktop_file}")
 
     if shutil.which("xdg-mime"):
         subprocess.run(
@@ -105,14 +105,14 @@ MimeType=x-scheme-handler/napiprojekt;
             ],
             check=True,
         )
-        print("✓ Zarejestrowano protokół napiprojekt: przez xdg-mime")
+        print("OK: Zarejestrowano protokół napiprojekt: przez xdg-mime")
     else:
         print("⚠ Nie znaleziono xdg-mime — uruchom ręcznie:")
         print("  xdg-mime default napihandler.desktop x-scheme-handler/napiprojekt")
 
     if shutil.which("update-desktop-database"):
         subprocess.run(["update-desktop-database", str(desktop_dir)], check=True)
-        print("✓ Odświeżono bazę desktop entries")
+        print("OK: Odświeżono bazę desktop entries")
 
 
 def zarejestruj_windows():
@@ -133,7 +133,7 @@ def zarejestruj_windows():
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, command_key_path) as key:
             winreg.SetValue(key, None, winreg.REG_SZ, f'"{exe}" "%1"')
 
-        print(f"✓ Zarejestrowano protokół napiprojekt: w rejestrze Windows")
+        print("OK: Zarejestrowano protokół napiprojekt: w rejestrze Windows")
         print("  Zmiany wejdą w życie po restarcie przeglądarki lub systemu.")
 
     except Exception as e:
@@ -153,7 +153,7 @@ def zarejestruj():
     else:
         print(f"Błąd: Nieobsługiwany system: {sys.platform}")
         sys.exit(1)
-    print("\n✓ Gotowe! Kliknięcie w link napiprojekt: będzie uruchamiać napihandler.")
+    print("\nOK: Gotowe! Kliknięcie w link napiprojekt: będzie uruchamiać napihandler.")
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +265,7 @@ def main():
 
     if args.register:
         if args.dry_run:
-            print("✓ Symulacja rejestracji protokołu napiprojekt: zakończona pomyślnie")
+            print("OK: Symulacja rejestracji protokołu napiprojekt: zakończona pomyślnie")
             print("  (Użyto --dry-run - rejestracja została pominięta)")
         else:
             zarejestruj()
@@ -281,7 +281,7 @@ def main():
     print(f"Pobieranie napisów: {film_id} [{args.jezyk}]")
     zawartosc = pobierz_napisy(film_id, args.jezyk)
     Path(nazwa_pliku).write_bytes(zawartosc)
-    print(f"✓ Zapisano: {Path(nazwa_pliku).resolve()}")
+    print(f"OK: Zapisano: {Path(nazwa_pliku).resolve()}")
 
 
 if __name__ == "__main__":
