@@ -38,7 +38,7 @@ jobs:
       - name: Ustaw Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version-file: ".python-version"
 
       - name: Zainstaluj zależności
         run: pip install -r requirements.txt
