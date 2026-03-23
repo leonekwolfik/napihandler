@@ -115,9 +115,9 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            dist/${{ matrix.artifact_name }} --register --dry-run
+            dist/${{ matrix.artifact_name }} --register
           else
-            ./dist/${{ matrix.artifact_name }} --register --dry-run
+            ./dist/${{ matrix.artifact_name }} --register
           fi
 
   release:
