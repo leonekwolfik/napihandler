@@ -1,0 +1,45 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: Build and Test (${{ matrix.artifact_name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: napihandler-linux-x86_64
+          - os: macos-latest
+            artifact_name: napihandler-macos-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ustaw Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Zainstaluj zależności
+        run: pip install pyinstaller requests
+
+      - name: Zbuduj binarkę
+        run: python3 build/build.py
+
+      - name: Zmień nazwę binarki
+        run: mv dist/napihandler dist/${{ matrix.artifact_name }}
+
+      - name: Testuj binarkę
+        run: ./dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
+
+      - name: Sprawdź plik srt
+        run: test -f *.srt && echo "Plik srt znaleziony" || exit 1
