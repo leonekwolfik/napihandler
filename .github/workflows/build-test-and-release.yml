@@ -28,6 +28,12 @@ jobs:
             artifact_name: napihandler-macos-x86_64
           - os: macos-latest
             artifact_name: napihandler-macos-arm64
+          - os: windows-latest
+            artifact_name: napihandler-windows-x86_64
+          - os: android-latest
+            artifact_name: napihandler-android-arm64
+          - os: ios-latest
+            artifact_name: napihandler-ios-arm64
 
     steps:
       - name: Checkout
