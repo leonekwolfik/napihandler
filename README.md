@@ -69,3 +69,6 @@ napihandler/
 
 NapiProjekt identyfikuje filmy po MD5 liczonym z **pierwszych 10 MB** pliku wideo.
 Hash widoczny w linku `napiprojekt:HASH` na stronie to właśnie ten identyfikator.
+
+## Website
+[NapiHandler](https://leonekwolfik.github.io/napihandler/)

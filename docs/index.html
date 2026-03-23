@@ -1,73 +1,547 @@
-<!doctype html>
-<html lang="pl">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NAPIHandler — Node API Handler</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>napihandler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --muted: #666;
+      --accent: #f5a623;
+      --accent-dim: rgba(245, 166, 35, 0.12);
+      --green: #4ade80;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── grid lines ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 80px 80px;
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── layout ── */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* ── header ── */
+    header {
+      padding: 4rem 0 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.2em 0.7em;
+      margin-bottom: 1.5rem;
+      animation: fadein 0.4s ease both;
+    }
+
+    h1 {
+      font-family: var(--mono);
+      font-size: clamp(2.8rem, 8vw, 5rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: #fff;
+      animation: fadein 0.5s ease 0.1s both;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .tagline {
+      margin-top: 1.2rem;
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 480px;
+      animation: fadein 0.5s ease 0.2s both;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+      animation: fadein 0.5s ease 0.3s both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 0.65em 1.4em;
+      border: 1px solid;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: #ffb733; border-color: #ffb733; }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+    /* ── section ── */
+    section { padding: 4rem 0; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-family: var(--mono);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+
+    p { color: #aaa; margin-bottom: 1rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── how it works ── */
+    .steps {
+      display: grid;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 3rem 1fr;
+      gap: 1.5rem;
+      align-items: start;
+      background: var(--surface);
+      padding: 1.5rem;
+      transition: background 0.15s;
+    }
+    .step:hover { background: #1c1c1c; }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      padding-top: 0.2rem;
+    }
+
+    .step-title {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+
+    .step p { margin: 0; font-size: 0.9rem; }
+
+    /* ── install ── */
+    .os-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      width: fit-content;
+    }
+
+    .os-tab {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      padding: 0.5em 1.2em;
+      cursor: pointer;
+      color: var(--muted);
+      border: none;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      transition: color 0.15s, background 0.15s;
+    }
+    .os-tab:last-child { border-right: none; }
+    .os-tab.active { color: var(--accent); background: var(--accent-dim); }
+    .os-tab:hover:not(.active) { color: var(--text); }
+
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.9;
+      overflow-x: auto;
+      display: none;
+    }
+    .code-block.active { display: block; }
+
+    .code-block .comment { color: var(--muted); }
+    .code-block .cmd { color: var(--green); }
+    .code-block .arg { color: #93c5fd; }
+
+    .copy-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.6rem;
+    }
+    .copy-row:last-child { margin-bottom: 0; }
+
+    .copy-btn {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 0.15em 0.6em;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--text); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    /* ── download table ── */
+    .dl-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      margin-top: 2rem;
+    }
+
+    .dl-table th {
+      text-align: left;
+      padding: 0.7rem 1rem;
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dl-table td {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: #ccc;
+      vertical-align: middle;
+    }
+    .dl-table tr:last-child td { border-bottom: none; }
+    .dl-table tr:hover td { background: var(--surface); }
+
+    .arch-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 0.1em 0.5em;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      margin-left: 0.4rem;
+    }
+
+    .dl-link {
+      color: var(--accent);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .dl-link:hover { text-decoration: underline; }
+
+    /* ── footer ── */
+    footer {
+      padding: 3rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    footer p { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin: 0; }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── animations ── */
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
-      <h1>NAPIHandler</h1>
-      <p class="tagline">Lekki handler API dla Node.js — obsługa routingu, walidacja i konfiguracja</p>
+
+<div class="wrap">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="badge">open source · cli tool</div>
+    <h1>napi<span>handler</span></h1>
+    <p class="tagline">
+      Download subtitles from NapiProjekt via the <code style="font-family:var(--mono);color:var(--accent)">napiprojekt:</code> protocol on macOS and Linux.
+    </p>
+    <div class="header-actions">
+      <a href="https://github.com/YOUR_USERNAME/napihandler/releases/latest" class="btn btn-primary">
+        ↓ Download latest
+      </a>
+      <a href="https://github.com/YOUR_USERNAME/napihandler" class="btn btn-ghost">
+        ⌥ View on GitHub
+      </a>
     </div>
   </header>
 
-  <main class="container">
-    <section>
-      <h2>Opis projektu</h2>
-      <p>NAPIHandler to prosty, modułowy handler do budowy API w Node.js. Ułatwia tworzenie endpointów, walidację danych i obsługę błędów.</p>
-    </section>
-
-    <section>
-      <h2>Funkcje</h2>
-      <ul>
-        <li>Prosty routing i mapowanie handlerów</li>
-        <li>Walidacja wejścia</li>
-        <li>Obsługa błędów i standaryzowane odpowiedzi</li>
-        <li>Łatwy w integracji z istniejącymi aplikacjami Node</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Jak zacząć</h2>
-      <ol>
-        <li>Sklonuj repo: <code>git clone https://github.com/leonekwolfik/napihandler.git</code></li>
-        <li>Zainstaluj zależności: <code>npm install</code></li>
-        <li>Uruchom testowy serwer: <code>node example.js</code> (lub zgodnie z README repo)</li>
-      </ol>
-    </section>
-
-    <section>
-      <h2>Przykład użycia</h2>
-      <pre><code>// przykładowy handler
-const NAPI = require('napihandler');
-
-const app = new NAPI();
-app.get('/hello', (req, res) => {
-  res.json({ message: 'Hello world' });
-});
-
-app.listen(3000);
-</code></pre>
-    </section>
-
-    <section>
-      <h2>Contributing</h2>
-      <p>Pull requesty i zgłoszenia issue są mile widziane. Zadbaj o testy i zgodność z stylem projektu.</p>
-    </section>
-
-    <section class="meta">
-      <p><strong>Repozytorium:</strong> <a href="https://github.com/leonekwolfik/napihandler" target="_blank" rel="noopener">leonekwolfik/napihandler</a></p>
-      <p><strong>Autor:</strong> leonekwolfik</p>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <p>© 2026 NAPIHandler — projekt open source</p>
+  <!-- ── HOW IT WORKS ── -->
+  <section class="reveal">
+    <div class="section-label">// how it works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div>
+          <div class="step-title">Download the binary</div>
+          <p>Grab the right build for your system from the Releases page — no runtime, no dependencies.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div>
+          <div class="step-title">Register the protocol</div>
+          <p>Run <code style="font-family:var(--mono);color:var(--accent)">napihandler --register</code> once. This hooks into your OS so clicking a <code style="font-family:var(--mono);color:#aaa">napiprojekt:</code> link triggers napihandler automatically.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div>
+          <div class="step-title">Click any link on napiprojekt.pl</div>
+          <p>The subtitle file is downloaded to your current directory as a <code style="font-family:var(--mono);color:#aaa">.srt</code> file. Done.</p>
+        </div>
+      </div>
     </div>
+  </section>
+
+  <!-- ── INSTALL ── -->
+  <section class="reveal">
+    <div class="section-label">// installation</div>
+    <h2>Get started</h2>
+
+    <div style="margin-top:2rem;">
+      <div class="os-tabs">
+        <button class="os-tab active" onclick="switchTab('linux')">Linux</button>
+        <button class="os-tab" onclick="switchTab('macos')">macOS</button>
+      </div>
+
+      <div id="tab-linux" class="code-block active">
+        <div class="copy-row">
+          <span><span class="comment"># download and install</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">curl</span> <span class="arg">-Lo napihandler</span> https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-linux-x86_64</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'curl -Lo napihandler https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-linux-x86_64')">copy</button>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">chmod</span> <span class="arg">+x</span> napihandler &amp;&amp; <span class="cmd">sudo mv</span> napihandler /usr/local/bin/</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'chmod +x napihandler && sudo mv napihandler /usr/local/bin/')">copy</button>
+        </div>
+        <div class="copy-row" style="margin-top:0.8rem;">
+          <span><span class="comment"># register napiprojekt: protocol (once)</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">napihandler</span> <span class="arg">--register</span></span>
+          <button class="copy-btn" onclick="copyCmd(this, 'napihandler --register')">copy</button>
+        </div>
+      </div>
+
+      <div id="tab-macos" class="code-block">
+        <div class="copy-row">
+          <span><span class="comment"># download and install (Apple Silicon)</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">curl</span> <span class="arg">-Lo napihandler</span> https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-macos-arm64</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'curl -Lo napihandler https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-macos-arm64')">copy</button>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">chmod</span> <span class="arg">+x</span> napihandler &amp;&amp; <span class="cmd">sudo mv</span> napihandler /usr/local/bin/</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'chmod +x napihandler && sudo mv napihandler /usr/local/bin/')">copy</button>
+        </div>
+        <div class="copy-row" style="margin-top:0.8rem;">
+          <span><span class="comment"># register napiprojekt: protocol (once)</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">napihandler</span> <span class="arg">--register</span></span>
+          <button class="copy-btn" onclick="copyCmd(this, 'napihandler --register')">copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── USAGE ── -->
+  <section class="reveal">
+    <div class="section-label">// usage</div>
+    <h2>CLI reference</h2>
+    <div class="code-block active" style="margin-top:2rem;">
+      <div class="copy-row">
+        <span><span class="comment"># paste a link directly from napiprojekt.pl</span></span>
+      </div>
+      <div class="copy-row">
+        <span><span class="cmd">napihandler</span> <span class="arg">"napiprojekt:07a1046ccddd59c0ffc7932331a16d63"</span></span>
+      </div>
+      <div class="copy-row" style="margin-top:0.6rem;">
+        <span><span class="comment"># or just the MD5 hash</span></span>
+      </div>
+      <div class="copy-row">
+        <span><span class="cmd">napihandler</span> <span class="arg">07a1046ccddd59c0ffc7932331a16d63</span></span>
+      </div>
+      <div class="copy-row" style="margin-top:0.6rem;">
+        <span><span class="comment"># different language</span></span>
+      </div>
+      <div class="copy-row">
+        <span><span class="cmd">napihandler</span> <span class="arg">"napiprojekt:HASH"</span> --jezyk EN</span>
+      </div>
+      <div class="copy-row" style="margin-top:0.6rem;">
+        <span><span class="comment"># custom output filename</span></span>
+      </div>
+      <div class="copy-row">
+        <span><span class="cmd">napihandler</span> <span class="arg">"napiprojekt:HASH"</span> -o film.srt</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DOWNLOADS ── -->
+  <section class="reveal">
+    <div class="section-label">// downloads</div>
+    <h2>All builds</h2>
+    <table class="dl-table">
+      <thead>
+        <tr>
+          <th>System</th>
+          <th>Architecture</th>
+          <th>File</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Linux</td>
+          <td>x86_64</td>
+          <td><a class="dl-link" href="https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-linux-x86_64">↓ napihandler-linux-x86_64</a></td>
+        </tr>
+        <tr>
+          <td>Linux</td>
+          <td>arm64</td>
+          <td><a class="dl-link" href="https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-linux-arm64">↓ napihandler-linux-arm64</a></td>
+        </tr>
+        <tr>
+          <td>macOS</td>
+          <td>arm64 <span class="arch-tag">Apple Silicon</span></td>
+          <td><a class="dl-link" href="https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-macos-arm64">↓ napihandler-macos-arm64</a></td>
+        </tr>
+        <tr>
+          <td>macOS</td>
+          <td>x86_64 <span class="arch-tag">Intel</span></td>
+          <td><a class="dl-link" href="https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-macos-x86_64">↓ napihandler-macos-x86_64</a></td>
+        </tr>
+        <tr>
+          <td>Windows</td>
+          <td>x86_64</td>
+          <td><a class="dl-link" href="https://github.com/YOUR_USERNAME/napihandler/releases/latest/download/napihandler-windows-x86_64.exe">↓ napihandler-windows-x86_64.exe</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <p>napihandler · MIT License · <a href="https://github.com/YOUR_USERNAME/napihandler">github.com/YOUR_USERNAME/napihandler</a></p>
+    <p>built for <a href="https://napiprojekt.pl">napiprojekt.pl</a></p>
   </footer>
+
+</div>
+
+<script>
+  function switchTab(os) {
+    document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.code-block[id^="tab-"]').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + os).classList.add('active');
+  }
+
+  function copyCmd(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
 </body>
 </html>
