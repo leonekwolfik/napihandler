@@ -127,7 +127,7 @@ def zarejestruj():
 
 def parsuj_id(argument: str) -> str:
     """Akceptuje 'napiprojekt:HASH', 'napiprojekt://HASH' lub sam hash MD5."""
-    match = re.match(r"^(?:napiprojekt://?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE)
+    match = re.match(r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE)
     if not match:
         print(f"Błąd: Nieprawidłowy format ID: '{argument}'")
         print("Oczekiwano: napiprojekt:07a1046ccddd59c0ffc7932331a16d63 lub sam hash MD5")
