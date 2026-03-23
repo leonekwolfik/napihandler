@@ -53,7 +53,17 @@ jobs:
           fi
 
       - name: Zmień nazwę binarki
-        run: mv dist/napihandler dist/${{ matrix.artifact_name }}
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            if [ -f dist/napihandler.exe ]; then
+              mv dist/napihandler.exe dist/${{ matrix.artifact_name }}
+            else
+              mv dist/napihandler dist/${{ matrix.artifact_name }}
+            fi
+          else
+            mv dist/napihandler dist/${{ matrix.artifact_name }}
+          fi
 
       - name: Testuj binarkę (sam hash)
         shell: bash
