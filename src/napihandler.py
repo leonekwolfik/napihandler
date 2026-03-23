@@ -22,6 +22,7 @@ from pathlib import Path
 # Rejestracja protokołu
 # ---------------------------------------------------------------------------
 
+
 def binary_path() -> Path:
     """Ścieżka do aktualnie uruchomionej binarki (lub skryptu)."""
     return Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve()
@@ -96,17 +97,23 @@ MimeType=x-scheme-handler/napiprojekt;
 
     if shutil.which("xdg-mime"):
         subprocess.run(
-            ["xdg-mime", "default", "napihandler.desktop", "x-scheme-handler/napiprojekt"],
+            [
+                "xdg-mime",
+                "default",
+                "napihandler.desktop",
+                "x-scheme-handler/napiprojekt",
+            ],
             check=True,
         )
         print("✓ Zarejestrowano protokół napiprojekt: przez xdg-mime")
     else:
         print("⚠ Nie znaleziono xdg-mime — uruchom ręcznie:")
         print("  xdg-mime default napihandler.desktop x-scheme-handler/napiprojekt")
-    
+
     if shutil.which("update-desktop-database"):
         subprocess.run(["update-desktop-database", str(desktop_dir)], check=True)
         print("✓ Odświeżono bazę desktop entries")
+
 
 def zarejestruj_windows():
     exe = binary_path()
@@ -153,12 +160,17 @@ def zarejestruj():
 # Pobieranie napisów
 # ---------------------------------------------------------------------------
 
+
 def parsuj_id(argument: str) -> str:
     """Akceptuje 'napiprojekt:HASH', 'napiprojekt://HASH' lub sam hash MD5."""
-    match = re.match(r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE)
+    match = re.match(
+        r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE
+    )
     if not match:
         print(f"Błąd: Nieprawidłowy format ID: '{argument}'")
-        print("Oczekiwano: napiprojekt:07a1046ccddd59c0ffc7932331a16d63 lub sam hash MD5")
+        print(
+            "Oczekiwano: napiprojekt:07a1046ccddd59c0ffc7932331a16d63 lub sam hash MD5"
+        )
         sys.exit(1)
     return match.group(1).lower()
 
@@ -206,6 +218,7 @@ def pobierz_napisy(film_id: str, jezyk: str = "PL") -> bytes:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         prog="napihandler",
@@ -213,7 +226,7 @@ def main():
         epilog=(
             "Przykłady:\n"
             "  napihandler --register\n"
-            "  napihandler \"napiprojekt:07a1046ccddd59c0ffc7932331a16d63\"\n"
+            '  napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"\n'
             "  napihandler 07a1046ccddd59c0ffc7932331a16d63 --jezyk EN -o film.srt"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -235,13 +248,15 @@ def main():
         help="URI w formacie 'napiprojekt:HASH' lub sam MD5",
     )
     parser.add_argument(
-        "--jezyk", "-j",
+        "--jezyk",
+        "-j",
         default="PL",
         metavar="KOD",
         help="Język napisów, np. PL, EN (domyślnie: PL)",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         metavar="PLIK",
         help="Nazwa pliku wyjściowego (domyślnie: HASH_JEZYK.srt)",
     )

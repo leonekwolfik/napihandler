@@ -31,12 +31,16 @@ def sprawdz_wymagania():
 def buduj():
     cmd = [
         "pyinstaller",
-        "--onefile",                   # jedna binarka
-        "--name", "napihandler",       # nazwa pliku wynikowego
-        "--distpath", str(DIST),       # gdzie trafia binarka
-        "--workpath", str(BUILD_TMP),  # pliki tymczasowe
-        "--specpath", str(BUILD_TMP),  # plik .spec
-        "--strip",                     # mniejszy rozmiar
+        "--onefile",  # jedna binarka
+        "--name",
+        "napihandler",  # nazwa pliku wynikowego
+        "--distpath",
+        str(DIST),  # gdzie trafia binarka
+        "--workpath",
+        str(BUILD_TMP),  # pliki tymczasowe
+        "--specpath",
+        str(BUILD_TMP),  # plik .spec
+        "--strip",  # mniejszy rozmiar
         str(SRC),
     ]
 
