@@ -39,7 +39,6 @@ def sprawdz_wymagania():
 def buduj():
     cmd = [
         "pyinstaller",
-        "--onefile",  # jedna binarka
         "--name",
         "napihandler",  # nazwa pliku wynikowego
         "--distpath",
@@ -48,9 +47,21 @@ def buduj():
         str(BUILD_TMP),  # pliki tymczasowe
         "--specpath",
         str(BUILD_TMP),  # plik .spec
-        "--strip",  # mniejszy rozmiar
-        str(SRC),
     ]
+
+    # Różne opcje w zależności od platformy
+    if sys.platform.startswith("win"):
+        cmd.extend([
+            "--onefile",  # jedna binarka na Windowsie
+            "--runtime-tmpdir", "%TEMP%",  # użyj katalogu TEMP
+        ])
+    else:
+        cmd.extend([
+            "--onefile",  # jedna binarka na innych platformach
+            "--strip",  # mniejszy rozmiar
+        ])
+
+    cmd.append(str(SRC))
 
     print(f"Building binary from {SRC} ...")
     result = subprocess.run(cmd)
