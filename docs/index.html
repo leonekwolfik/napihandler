@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NAPIHandler — Node API Handler</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>NAPIHandler</h1>
+      <p class="tagline">Lekki handler API dla Node.js — obsługa routingu, walidacja i konfiguracja</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section>
+      <h2>Opis projektu</h2>
+      <p>NAPIHandler to prosty, modułowy handler do budowy API w Node.js. Ułatwia tworzenie endpointów, walidację danych i obsługę błędów.</p>
+    </section>
+
+    <section>
+      <h2>Funkcje</h2>
+      <ul>
+        <li>Prosty routing i mapowanie handlerów</li>
+        <li>Walidacja wejścia</li>
+        <li>Obsługa błędów i standaryzowane odpowiedzi</li>
+        <li>Łatwy w integracji z istniejącymi aplikacjami Node</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Jak zacząć</h2>
+      <ol>
+        <li>Sklonuj repo: <code>git clone https://github.com/leonekwolfik/napihandler.git</code></li>
+        <li>Zainstaluj zależności: <code>npm install</code></li>
+        <li>Uruchom testowy serwer: <code>node example.js</code> (lub zgodnie z README repo)</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Przykład użycia</h2>
+      <pre><code>// przykładowy handler
+const NAPI = require('napihandler');
+
+const app = new NAPI();
+app.get('/hello', (req, res) => {
+  res.json({ message: 'Hello world' });
+});
+
+app.listen(3000);
+</code></pre>
+    </section>
+
+    <section>
+      <h2>Contributing</h2>
+      <p>Pull requesty i zgłoszenia issue są mile widziane. Zadbaj o testy i zgodność z stylem projektu.</p>
+    </section>
+
+    <section class="meta">
+      <p><strong>Repozytorium:</strong> <a href="https://github.com/leonekwolfik/napihandler" target="_blank" rel="noopener">leonekwolfik/napihandler</a></p>
+      <p><strong>Autor:</strong> leonekwolfik</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© 2026 NAPIHandler — projekt open source</p>
+    </div>
+  </footer>
+</body>
+</html>
