@@ -1,3 +1,7 @@
+[project]
+name = "napihandler"
+version = "v0.0.4"
+
 [tool.ruff]
 # Set the maximum line length to 79.
 line-length = 88
