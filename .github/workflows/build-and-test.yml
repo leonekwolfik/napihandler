@@ -39,7 +39,7 @@ jobs:
         run: mv dist/napihandler dist/${{ matrix.artifact_name }}
 
       - name: Testuj binarkę
-        run: ./dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
+        run: ./dist/${{ matrix.artifact_name }} "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"
 
       - name: Sprawdź plik srt
         run: test -f *.srt && echo "Plik srt znaleziony" || exit 1
