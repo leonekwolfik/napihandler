@@ -42,12 +42,14 @@ jobs:
 
       - name: Ustaw kodowanie UTF-8 (Windows)
         if: runner.os == 'Windows'
+        shell: bash
         run: chcp 65001
 
       - name: Zainstaluj zależności
         run: pip install -r requirements.txt
 
       - name: Zbuduj binarkę
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             python build/build.py
@@ -59,6 +61,7 @@ jobs:
         run: mv dist/napihandler dist/${{ matrix.artifact_name }}
 
       - name: Testuj binarkę (sam hash)
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             dist/${{ matrix.artifact_name }} 07a1046ccddd59c0ffc7932331a16d63
@@ -67,6 +70,7 @@ jobs:
           fi
 
       - name: Sprawdź plik srt
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             if [ -f *.srt ]; then echo "Plik srt znaleziony"; else exit 1; fi
@@ -80,6 +84,7 @@ jobs:
           fi
 
       - name: Testuj binarkę (napiprojekt:hash)
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
@@ -88,6 +93,7 @@ jobs:
           fi
 
       - name: Sprawdź plik srt
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             if [ -f *.srt ]; then echo "Plik srt znaleziony"; else exit 1; fi
@@ -101,6 +107,7 @@ jobs:
           fi
 
       - name: Testuj rejestrację protokołu
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             dist/${{ matrix.artifact_name }} --register --dry-run
