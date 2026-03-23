@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-build.py — buduje napihandler do standalone binarki przy użyciu PyInstaller.
-Wynikowa binarka trafia do dist/napihandler.
+build.py — builds napihandler into a standalone binary using PyInstaller.
+The resulting binary goes to dist/napihandler.
 
-Użycie:
+Usage:
     python3 build/build.py
 """
 
@@ -26,7 +26,7 @@ DIST = ROOT / "dist"
 BUILD_TMP = ROOT / "build" / "_tmp"
 
 
-def sprawdz_wymagania():
+def check_requirements():
     if not shutil.which("pyinstaller"):
         print("Error: PyInstaller is not installed.")
         print("  Install: pip3 install pyinstaller")
@@ -36,29 +36,29 @@ def sprawdz_wymagania():
         sys.exit(1)
 
 
-def buduj():
+def build():
     cmd = [
         "pyinstaller",
         "--name",
-        "napihandler",  # nazwa pliku wynikowego
+        "napihandler",  # output filename
         "--distpath",
-        str(DIST),  # gdzie trafia binarka
+        str(DIST),  # where the binary goes
         "--workpath",
-        str(BUILD_TMP),  # pliki tymczasowe
+        str(BUILD_TMP),  # temporary files
         "--specpath",
-        str(BUILD_TMP),  # plik .spec
+        str(BUILD_TMP),  # .spec file
     ]
 
-    # Różne opcje w zależności od platformy
+    # Different options depending on platform
     if sys.platform.startswith("win"):
         cmd.extend([
-            "--onefile",  # jedna binarka na Windowsie
-            "--runtime-tmpdir", "%TEMP%",  # użyj katalogu TEMP
+            "--onefile",  # single binary on Windows
+            "--runtime-tmpdir", "%TEMP%",  # use TEMP directory
         ])
     else:
         cmd.extend([
-            "--onefile",  # jedna binarka na innych platformach
-            "--strip",  # mniejszy rozmiar
+            "--onefile",  # single binary on other platforms
+            "--strip",  # smaller size
         ])
 
     cmd.append(str(SRC))
@@ -71,21 +71,21 @@ def buduj():
         sys.exit(1)
 
 
-def posprzataj():
+def cleanup():
     if BUILD_TMP.exists():
         shutil.rmtree(BUILD_TMP)
     print("OK: Cleaned up temporary files")
 
 
 def main():
-    sprawdz_wymagania()
-    buduj()
-    posprzataj()
+    check_requirements()
+    build()
+    cleanup()
 
-    binarka = DIST / "napihandler"
-    print(f"\nOK: Done! Binary: {binarka}")
+    binary = DIST / "napihandler"
+    print(f"\nOK: Done! Binary: {binary}")
     print(f"\nTo install globally:")
-    print(f"  sudo cp {binarka} /usr/local/bin/napihandler")
+    print(f"  sudo cp {binary} /usr/local/bin/napihandler")
 
 
 if __name__ == "__main__":
