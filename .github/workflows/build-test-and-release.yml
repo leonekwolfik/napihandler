@@ -39,7 +39,7 @@ jobs:
           python-version: "3.12"
 
       - name: Zainstaluj zależności
-        run: pip install pyinstaller requests
+        run: pip install -r requirements.txt
 
       - name: Zbuduj binarkę
         run: python3 build/build.py
