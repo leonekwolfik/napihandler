@@ -39,7 +39,7 @@ jobs:
         run: mv dist/napihandler dist/${{ matrix.artifact_name }}
 
       - name: Testuj binarkę (sam hash)
-        run: ./dist/${{ matrix.artifact_name }} 07a1046ccddd59c0ffc7932331a16d63  # Działa
+        run: ./dist/${{ matrix.artifact_name }} 07a1046ccddd59c0ffc7932331a16d63
 
       - name: Sprawdź plik srt
         run: |
@@ -47,7 +47,7 @@ jobs:
           rm -f *.srt  # Czyści plik srt po teście
 
       - name: Testuj binarkę (napiprojekt:hash)
-        run: ./dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63  # Nie Działa, Błąd: Nieprawidłowy format ID
+        run: ./dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
 
       - name: Sprawdź plik srt
         run: |
