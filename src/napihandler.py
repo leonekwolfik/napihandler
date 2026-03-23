@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-napihandler — pobiera napisy z NapiProjekt przez protokół napiprojekt:
+napihandler — downloads subtitles from NapiProjekt via napiprojekt: protocol
 
-Użycie:
-    napihandler --register                          # jednorazowa rejestracja protokołu
-    napihandler "napiprojekt:HASH"                  # pobieranie napisów
-    napihandler "napiprojekt:HASH" --jezyk EN       # inny język
-    napihandler "napiprojekt:HASH" -o film.srt      # własna nazwa pliku
+Usage:
+    napihandler --register                          # one-time protocol registration
+    napihandler "napiprojekt:HASH"                  # download subtitles
+    napihandler "napiprojekt:HASH" --language EN    # different language
+    napihandler "napiprojekt:HASH" -o film.srt      # custom filename
 """
 
 import argparse
@@ -19,26 +19,26 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-# Rejestracja protokołu
+# Protocol Registration
 # ---------------------------------------------------------------------------
 
 
 def binary_path() -> Path:
-    """Ścieżka do aktualnie uruchomionej binarki (lub skryptu)."""
+    """Path to the currently running binary (or script)."""
     return Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve()
 
 
-def zarejestruj_macos():
+def register_macos():
     exe = binary_path()
     app_dir = Path.home() / "Applications" / "NapiHandler.app"
     macos_dir = app_dir / "Contents" / "MacOS"
     macos_dir.mkdir(parents=True, exist_ok=True)
 
-    # Info.plist — rejestruje schemat napiprojekt:
+    # Info.plist — registers napiprojekt scheme:
     plist = app_dir / "Contents" / "Info.plist"
     plist.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  "http://www.apple.com/DTDs/PropertyList-1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key><string>NapiHandler</string>
@@ -59,7 +59,7 @@ def zarejestruj_macos():
 </plist>
 """)
 
-    # Launcher — macOS przekazuje URI jako argument
+    # Launcher — macOS passes URI as argument
     launcher = macos_dir / "napihandler-launcher"
     launcher.write_text(f"""#!/bin/bash
 URI=$(echo "$1" | sed 's|napiprojekt://|napiprojekt:|')
@@ -67,19 +67,19 @@ URI=$(echo "$1" | sed 's|napiprojekt://|napiprojekt:|')
 """)
     launcher.chmod(launcher.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
-    # Zarejestruj .app w LaunchServices
+    # Register .app in LaunchServices
     lsregister = (
         "/System/Library/Frameworks/CoreServices.framework/Versions/A"
         "/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
     )
     subprocess.run([lsregister, "-f", str(app_dir)], check=True)
 
-    print(f"OK: Utworzono: {app_dir}")
-    print("OK: Zarejestrowano protokół napiprojekt: w systemie")
-    print("  Może być konieczne wylogowanie lub restart Findera.")
+    print(f"OK: Created: {app_dir}")
+    print("OK: Registered napiprojekt protocol in system")
+    print("  You may need to log out or restart Finder.")
 
 
-def zarejestruj_linux():
+def register_linux():
     exe = binary_path()
     desktop_dir = Path.home() / ".local" / "share" / "applications"
     desktop_dir.mkdir(parents=True, exist_ok=True)
@@ -87,13 +87,13 @@ def zarejestruj_linux():
     desktop_file = desktop_dir / "napihandler.desktop"
     desktop_file.write_text(f"""[Desktop Entry]
 Name=NapiHandler
-Comment=Pobiera napisy z NapiProjekt
+Comment=Downloads subtitles from NapiProjekt
 Exec="{exe}" %u
 Type=Application
 NoDisplay=true
 MimeType=x-scheme-handler/napiprojekt;
 """)
-    print(f"OK: Utworzono: {desktop_file}")
+    print(f"OK: Created: {desktop_file}")
 
     if shutil.which("xdg-mime"):
         subprocess.run(
@@ -105,81 +105,81 @@ MimeType=x-scheme-handler/napiprojekt;
             ],
             check=True,
         )
-        print("OK: Zarejestrowano protokół napiprojekt: przez xdg-mime")
+        print("OK: Registered napiprojekt protocol via xdg-mime")
     else:
-        print("⚠ Nie znaleziono xdg-mime — uruchom ręcznie:")
-        print("  xdg-mime default napihandler.desktop x-scheme-handler/napiprojekt")
+        print("NOK: xdg-mime not found — run manually:")
+        print("xdg-mime default napihandler.desktop x-scheme-handler/napiprojekt")
 
     if shutil.which("update-desktop-database"):
         subprocess.run(["update-desktop-database", str(desktop_dir)], check=True)
-        print("OK: Odświeżono bazę desktop entries")
+        print("OK: Refreshed desktop entries database")
 
 
-def zarejestruj_windows():
+def register_windows():
     exe = binary_path()
     import winreg
 
-    # Klucz rejestru dla protokołu napiprojekt
+    # Registry key for napiprojekt protocol
     key_path = r"Software\Classes\napiprojekt"
     command_key_path = rf"{key_path}\shell\open\command"
 
     try:
-        # Utwórz główny klucz protokołu
+        # Create main protocol key
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
             winreg.SetValue(key, None, winreg.REG_SZ, "URL:NapiProjekt Subtitles")
             winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
 
-        # Utwórz klucz komendy
+        # Create command key
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, command_key_path) as key:
             winreg.SetValue(key, None, winreg.REG_SZ, f'"{exe}" "%1"')
 
-        print("OK: Zarejestrowano protokół napiprojekt: w rejestrze Windows")
-        print("  Zmiany wejdą w życie po restarcie przeglądarki lub systemu.")
+        print("OK: Registered napiprojekt protocol in Windows registry")
+        print("  Changes will take effect after restarting browser or system.")
 
     except Exception as e:
-        print(f"Błąd podczas rejestracji w Windows: {e}")
-        print("Spróbuj uruchomić jako administrator.")
+        print(f"Error during Windows registration: {e}")
+        print("Try running as administrator.")
         sys.exit(1)
 
 
-def zarejestruj():
-    print("Rejestracja protokołu napiprojekt: ...")
+def register():
+    print("Registering napiprojekt protocol...")
     if sys.platform == "darwin":
-        zarejestruj_macos()
+        register_macos()
     elif sys.platform.startswith("linux"):
-        zarejestruj_linux()
+        register_linux()
     elif sys.platform.startswith("win"):
-        zarejestruj_windows()
+        register_windows()
     else:
-        print(f"Błąd: Nieobsługiwany system: {sys.platform}")
+        print(f"Error: Unsupported system: {sys.platform}")
         sys.exit(1)
-    print("\nOK: Gotowe! Kliknięcie w link napiprojekt: będzie uruchamiać napihandler.")
+    print("\nOK: Done! Clicking napiprojekt: links will launch napihandler.")
 
 
 # ---------------------------------------------------------------------------
-# Pobieranie napisów
+# Subtitle Download
 # ---------------------------------------------------------------------------
 
 
-def parsuj_id(argument: str) -> str:
-    """Akceptuje 'napiprojekt:HASH', 'napiprojekt://HASH' lub sam hash MD5."""
+def parse_id(argument: str) -> str:
+    """Accepts 'napiprojekt:HASH', 'napiprojekt://HASH' or MD5 hash alone."""
     match = re.match(
         r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE
     )
     if not match:
-        print(f"Błąd: Nieprawidłowy format ID: '{argument}'")
+        print(f"Error: Invalid ID format: '{argument}'")
         print(
-            "Oczekiwano: napiprojekt:07a1046ccddd59c0ffc7932331a16d63 lub sam hash MD5"
+            "Expected: napiprojekt:07a1046ccddd59c0ffc7932331a16d63 or MD5 hash alone"
         )
         sys.exit(1)
     return match.group(1).lower()
 
 
-def pobierz_napisy(film_id: str, jezyk: str = "PL") -> bytes:
+def download_subtitles(film_id: str, language: str = "PL") -> bytes:
     try:
         import requests
     except ImportError:
-        print("Błąd: Brak biblioteki 'requests'. Zainstaluj: pip3 install requests")
+        print("Error: Missing 'requests' library. Install: pip3 install requests")
         sys.exit(1)
 
     url = "http://napiprojekt.pl/api/api-napiprojekt3.php"
@@ -190,7 +190,7 @@ def pobierz_napisy(film_id: str, jezyk: str = "PL") -> bytes:
         "user_nick": "",
         "user_password": "",
         "downloaded_subtitles_id": film_id,
-        "downloaded_subtitles_lang": jezyk,
+        "downloaded_subtitles_lang": language,
         "the": "end",
     }
 
@@ -198,17 +198,17 @@ def pobierz_napisy(film_id: str, jezyk: str = "PL") -> bytes:
         response = requests.post(url, data=payload, timeout=15)
         response.raise_for_status()
     except requests.exceptions.ConnectionError:
-        print("Błąd: Brak połączenia z napiprojekt.pl")
+        print("Error: No connection to napiprojekt.pl")
         sys.exit(1)
     except requests.exceptions.Timeout:
-        print("Błąd: Przekroczono czas oczekiwania na odpowiedź")
+        print("Error: Response timeout exceeded")
         sys.exit(1)
     except requests.exceptions.HTTPError as e:
-        print(f"Błąd HTTP: {e}")
+        print(f"HTTP Error: {e}")
         sys.exit(1)
 
     if response.content[:4] == b"NPc0":
-        print("Błąd: Napisy nie zostały znalezione dla podanego ID.")
+        print("Error: Subtitles not found for given ID.")
         sys.exit(1)
 
     return response.content
@@ -222,12 +222,12 @@ def pobierz_napisy(film_id: str, jezyk: str = "PL") -> bytes:
 def main():
     parser = argparse.ArgumentParser(
         prog="napihandler",
-        description="Pobiera napisy z NapiProjekt — handler protokołu napiprojekt: dla macOS, Linux i Windows.",
+        description="Downloads subtitles from NapiProjekt — napiprojekt: protocol handler for macOS, Linux and Windows.",
         epilog=(
-            "Przykłady:\n"
+            "Examples:\n"
             "  napihandler --register\n"
             '  napihandler "napiprojekt:07a1046ccddd59c0ffc7932331a16d63"\n'
-            "  napihandler 07a1046ccddd59c0ffc7932331a16d63 --jezyk EN -o film.srt"
+            "  napihandler 07a1046ccddd59c0ffc7932331a16d63 --language EN -o film.srt"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -235,53 +235,53 @@ def main():
     parser.add_argument(
         "--register",
         action="store_true",
-        help="Zarejestruj protokół napiprojekt: w systemie (jednorazowo po instalacji)",
+        help="Register napiprojekt: protocol in system (one-time after installation)",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Tylko symuluj rejestrację (do testów)",
+        help="Only simulate registration (for testing)",
     )
     parser.add_argument(
         "film_id",
         nargs="?",
-        help="URI w formacie 'napiprojekt:HASH' lub sam MD5",
+        help="URI in 'napiprojekt:HASH' format or MD5 hash alone",
     )
     parser.add_argument(
-        "--jezyk",
-        "-j",
+        "--language",
+        "-l",
         default="PL",
-        metavar="KOD",
-        help="Język napisów, np. PL, EN (domyślnie: PL)",
+        metavar="CODE",
+        help="Subtitle language, e.g. PL, EN (default: PL)",
     )
     parser.add_argument(
         "--output",
         "-o",
-        metavar="PLIK",
-        help="Nazwa pliku wyjściowego (domyślnie: HASH_JEZYK.srt)",
+        metavar="FILE",
+        help="Output filename (default: HASH_LANGUAGE.srt)",
     )
 
     args = parser.parse_args()
 
     if args.register:
         if args.dry_run:
-            print("OK: Symulacja rejestracji protokołu napiprojekt: zakończona pomyślnie")
-            print("  (Użyto --dry-run - rejestracja została pominięta)")
+            print("OK: Napiprojekt protocol registration simulation completed successfully")
+            print("  (Used --dry-run - registration was skipped)")
         else:
-            zarejestruj()
+            register()
         return
 
     if not args.film_id:
         parser.print_help()
         sys.exit(1)
 
-    film_id = parsuj_id(args.film_id)
-    nazwa_pliku = args.output or f"{film_id}_{args.jezyk}.srt"
+    film_id = parse_id(args.film_id)
+    filename = args.output or f"{film_id}_{args.language}.srt"
 
-    print(f"Pobieranie napisów: {film_id} [{args.jezyk}]")
-    zawartosc = pobierz_napisy(film_id, args.jezyk)
-    Path(nazwa_pliku).write_bytes(zawartosc)
-    print(f"OK: Zapisano: {Path(nazwa_pliku).resolve()}")
+    print(f"Downloading subtitles: {film_id} [{args.language}]")
+    content = download_subtitles(film_id, args.language)
+    Path(filename).write_bytes(content)
+    print(f"OK: Saved: {Path(filename).resolve()}")
 
 
 if __name__ == "__main__":
