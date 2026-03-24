@@ -344,7 +344,7 @@
     <div class="badge">open source · cli tool</div>
     <h1>napi<span>handler</span></h1>
     <p class="tagline">
-      Download subtitles from NapiProjekt via the <code style="font-family:var(--mono);color:var(--accent)">napiprojekt:</code> protocol on macOS and Linux.
+      Download subtitles from NapiProjekt via the <code style="font-family:var(--mono);color:var(--accent)">napiprojekt:</code> protocol on macOS, Linux, and Windows.
     </p>
     <div class="header-actions">
       <a href="https://github.com/leonekwolfik/napihandler/releases/latest" class="btn btn-primary">
@@ -393,6 +393,7 @@
       <div class="os-tabs">
         <button class="os-tab active" onclick="switchTab('linux')">Linux</button>
         <button class="os-tab" onclick="switchTab('macos')">macOS</button>
+        <button class="os-tab" onclick="switchTab('windows')">Windows</button>
       </div>
 
       <div id="tab-linux" class="code-block active">
@@ -430,6 +431,30 @@
         </div>
         <div class="copy-row" style="margin-top:0.8rem;">
           <span><span class="comment"># register napiprojekt: protocol (once)</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">napihandler</span> <span class="arg">--register</span></span>
+          <button class="copy-btn" onclick="copyCmd(this, 'napihandler --register')">copy</button>
+        </div>
+      </div>
+
+      <div id="tab-windows" class="code-block">
+        <div class="copy-row">
+          <span><span class="comment"># download with PowerShell</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">Invoke-WebRequest</span> <span class="arg">-Uri</span> https://github.com/leonekwolfik/napihandler/releases/latest/download/napihandler-windows-x86_64.exe <span class="arg">-OutFile</span> napihandler.exe</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'Invoke-WebRequest -Uri https://github.com/leonekwolfik/napihandler/releases/latest/download/napihandler-windows-x86_64.exe -OutFile napihandler.exe')">copy</button>
+        </div>
+        <div class="copy-row" style="margin-top:0.8rem;">
+          <span><span class="comment"># move to a directory in your PATH, e.g. C:\Windows\System32</span></span>
+        </div>
+        <div class="copy-row">
+          <span><span class="cmd">Move-Item</span> <span class="arg">napihandler.exe</span> C:\Windows\System32\napihandler.exe</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'Move-Item napihandler.exe C:\\Windows\\System32\\napihandler.exe')">copy</button>
+        </div>
+        <div class="copy-row" style="margin-top:0.8rem;">
+          <span><span class="comment"># register napiprojekt: protocol (once, run as Administrator)</span></span>
         </div>
         <div class="copy-row">
           <span><span class="cmd">napihandler</span> <span class="arg">--register</span></span>
