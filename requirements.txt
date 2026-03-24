@@ -1,2 +1,3 @@
 pyinstaller
+py7zr
 requests
