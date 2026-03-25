@@ -42,17 +42,32 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
         buf = io.BytesIO(data)
         try:
             with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
-                names = archive.namelist()
-                if not names:
-                    print("Error: Archive is empty.")
-                    sys.exit(1)
-                archive.extractall(path=tmpdir)
-            return (Path(tmpdir) / names[0]).read_bytes()
-        except Exception as exc:
-            print(f"Error: Failed to extract subtitles from archive: {exc}")
+    buf = io.BytesIO(data)
+    with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
+        # Get list of member names
+        try:
+            names = archive.getnames()
+        except AttributeError:
+            names = archive.namelist()
+
+        if not names:
+            print("Error: Archive is empty.")
             sys.exit(1)
 
+        # Prefer the first .srt file in the archive
+        srt_candidates = [name for name in names if name.lower().endswith(".srt")]
+        if not srt_candidates:
+            print("Error: Archive does not contain an .srt subtitle file.")
+            sys.exit(1)
 
+        target_name = srt_candidates[0]
+        files = archive.read([target_name])
+        file_obj = files.get(target_name)
+        if file_obj is None:
+            print("Error: Failed to read subtitle file from archive.")
+            sys.exit(1)
+
+        return file_obj.read()
 # ---------------------------------------------------------------------------
 # Protocol Registration
 # ---------------------------------------------------------------------------
