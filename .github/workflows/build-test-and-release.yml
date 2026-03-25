@@ -71,60 +71,10 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.artifact_name }}
 
-      - name: Test binary (hash only)
+      - name: Run tests
         shell: bash
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            dist/${{ matrix.artifact_name }} 07a1046ccddd59c0ffc7932331a16d63
-          else
-            ./dist/${{ matrix.artifact_name }} 07a1046ccddd59c0ffc7932331a16d63
-          fi
-
-      - name: Check SRT file
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            if [ -f *.srt ]; then echo "SRT file found"; else exit 1; fi
-          else
-            test -f *.srt && echo "SRT file found" || exit 1
-          fi
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            del *.srt 2>nul || true
-          else
-            rm -f *.srt
-          fi
-
-      - name: Test binary (napiprojekt:hash)
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
-          else
-            ./dist/${{ matrix.artifact_name }} napiprojekt:07a1046ccddd59c0ffc7932331a16d63
-          fi
-
-      - name: Check SRT file
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            if [ -f *.srt ]; then echo "SRT file found"; else exit 1; fi
-          else
-            test -f *.srt && echo "SRT file found" || exit 1
-          fi
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            del *.srt 2>nul || true
-          else
-            rm -f *.srt
-          fi
-
-      - name: Test protocol registration
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            dist/${{ matrix.artifact_name }} --register
-          else
-            ./dist/${{ matrix.artifact_name }} --register
-          fi
+        # Tests run against src/napihandler.py (available from the checkout).
+        run: pytest test/ -v
 
   release:
     name: Create Release

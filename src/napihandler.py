@@ -16,7 +16,6 @@ import shutil
 import stat
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 
@@ -38,10 +37,6 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
         print("Error: Missing 'py7zr' library. Install: pip3 install py7zr")
         sys.exit(1)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        buf = io.BytesIO(data)
-        try:
-            with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
     buf = io.BytesIO(data)
     with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
         # Get list of member names
