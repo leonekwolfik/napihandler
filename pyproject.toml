@@ -2,6 +2,11 @@
 name = "napihandler"
 version = "v0.0.5"
 
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that require network access to napiprojekt.pl",
+]
+
 [tool.ruff]
 # Set the maximum line length to 79.
 line-length = 88
