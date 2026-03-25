@@ -56,13 +56,26 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
             sys.exit(1)
 
         target_name = srt_candidates[0]
-        files = archive.read([target_name])
-        file_obj = files.get(target_name)
-        if file_obj is None:
+
+        # Use WriterFactory to extract the target file into memory
+        class InMemoryWriterFactory(py7zr.WriterFactory):
+            def __init__(self):
+                self.buffers = {}
+
+            def create(self, filename):
+                self.buffers[filename] = io.BytesIO()
+                return self.buffers[filename]
+
+        factory = InMemoryWriterFactory()
+        archive.extractall(factory=factory)
+
+        file_buf = factory.buffers.get(target_name)
+        if file_buf is None:
             print("Error: Failed to read subtitle file from archive.")
             sys.exit(1)
 
-        return file_obj.read()
+        file_buf.seek(0)
+        return file_buf.read()
 # ---------------------------------------------------------------------------
 # Protocol Registration
 # ---------------------------------------------------------------------------
