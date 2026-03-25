@@ -11,10 +11,12 @@ Unit tests for parse_id are also included.
 """
 
 import importlib.util
+import io
 import subprocess
 import sys
 from pathlib import Path
 
+import py7zr
 import pytest
 
 # ---------------------------------------------------------------------------
@@ -82,6 +84,78 @@ class TestParseId:
         """Hash that is too short causes SystemExit with code 1."""
         with pytest.raises(SystemExit) as exc_info:
             self.module.parse_id("07a1046c")
+        assert exc_info.value.code == 1
+
+
+# ---------------------------------------------------------------------------
+# Unit tests — extract_subtitles_from_archive
+# ---------------------------------------------------------------------------
+
+# Minimal valid SRT content used across extraction tests
+_SAMPLE_SRT = (
+    b"1\r\n"
+    b"00:00:01,000 --> 00:00:03,000\r\n"
+    b"Test subtitle line.\r\n"
+    b"\r\n"
+)
+
+
+def _make_archive(filename: str, content: bytes) -> bytes:
+    """Return bytes of a password-protected 7-zip archive containing a file
+    named *filename* with the given *content*."""
+    buf = io.BytesIO()
+    with py7zr.SevenZipFile(
+        buf, mode="w", password="iBlm8NTigvru0Jr0"
+    ) as archive:
+        archive.writestr(content, filename)
+    buf.seek(0)
+    return buf.read()
+
+
+class TestExtractSubtitlesFromArchive:
+    """Unit tests for extract_subtitles_from_archive."""
+
+    def setup_method(self):
+        self.module = _load_module()
+
+    def test_srt_content_is_extracted_correctly(self):
+        """Extracted bytes match the original SRT content placed in the archive."""
+        archive_data = _make_archive("film.srt", _SAMPLE_SRT)
+        result = self.module.extract_subtitles_from_archive(archive_data)
+        assert result == _SAMPLE_SRT
+
+    def test_extracted_content_is_readable_as_text(self):
+        """Extracted bytes can be decoded as UTF-8 text and contain SRT markers."""
+        archive_data = _make_archive("subtitle.srt", _SAMPLE_SRT)
+        result = self.module.extract_subtitles_from_archive(archive_data)
+        text = result.decode("utf-8")
+        assert "-->" in text, "Expected SRT timestamp separator '-->' in output"
+
+    def test_srt_file_selected_among_multiple_files(self):
+        """When the archive contains a non-SRT file first, the .srt file is used."""
+        srt_bytes = b"1\r\n00:00:00,000 --> 00:00:01,000\r\nHello\r\n\r\n"
+        buf = io.BytesIO()
+        with py7zr.SevenZipFile(
+            buf, mode="w", password="iBlm8NTigvru0Jr0"
+        ) as archive:
+            archive.writestr(b"some metadata", "info.txt")
+            archive.writestr(srt_bytes, "movie.srt")
+        buf.seek(0)
+        archive_data = buf.read()
+        result = self.module.extract_subtitles_from_archive(archive_data)
+        assert result == srt_bytes
+
+    def test_archive_without_srt_exits(self):
+        """Archive that contains no .srt file causes SystemExit with code 1."""
+        buf = io.BytesIO()
+        with py7zr.SevenZipFile(
+            buf, mode="w", password="iBlm8NTigvru0Jr0"
+        ) as archive:
+            archive.writestr(b"data", "nosubtitle.txt")
+        buf.seek(0)
+        archive_data = buf.read()
+        with pytest.raises(SystemExit) as exc_info:
+            self.module.extract_subtitles_from_archive(archive_data)
         assert exc_info.value.code == 1
 
 
