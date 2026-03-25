@@ -1,0 +1,43 @@
+# Dockerfile.build_and_test
+#
+# Mirrors the "build-and-test" job of the GHA workflow
+# (.github/workflows/build-test-and-release.yml) for the Linux x86_64 target.
+#
+# Build and run:
+#   docker build -f Dockerfile.build_and_test -t napihandler-build-and-test .
+#   docker run --rm napihandler-build-and-test
+#
+# The built binary is available at dist/napihandler-linux-x86_64 inside the
+# container. To copy it to the host after a successful run:
+#   docker run --rm -v "$(pwd)/dist:/out" napihandler-build-and-test \
+#     sh -c "cp dist/napihandler-linux-x86_64 /out/"
+
+FROM python:3.14-slim
+
+WORKDIR /app
+
+# Install system packages required by PyInstaller (binutils provides 'strip')
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    binutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files
+COPY requirements.txt .
+COPY pyproject.toml .
+COPY .python-version .
+COPY build/ build/
+COPY src/ src/
+COPY test/ test/
+
+# Install dependencies (matches: pip install -r requirements.txt)
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Build the binary (matches: python3 build/build.py)
+RUN python3 build/build.py
+
+# Rename the binary (matches: mv dist/napihandler dist/napihandler-linux-x86_64)
+RUN mv dist/napihandler dist/napihandler-linux-x86_64
+
+# Run tests (matches: pytest test/ -v)
+# Tests run against src/napihandler.py (available from the checkout).
+CMD ["pytest", "test/", "-v"]
