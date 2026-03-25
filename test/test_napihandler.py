@@ -75,16 +75,14 @@ class TestParseId:
         assert self.module.parse_id(TEST_HASH.upper()) == TEST_HASH
 
     def test_invalid_format_exits(self):
-        """Invalid value causes SystemExit with code 1."""
-        with pytest.raises(SystemExit) as exc_info:
+        """Invalid value raises ValueError."""
+        with pytest.raises(ValueError):
             self.module.parse_id("not_a_valid_hash")
-        assert exc_info.value.code == 1
 
     def test_too_short_hash_exits(self):
-        """Hash that is too short causes SystemExit with code 1."""
-        with pytest.raises(SystemExit) as exc_info:
+        """Hash that is too short raises ValueError."""
+        with pytest.raises(ValueError):
             self.module.parse_id("07a1046c")
-        assert exc_info.value.code == 1
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +144,7 @@ class TestExtractSubtitlesFromArchive:
         assert result == srt_bytes
 
     def test_archive_without_srt_exits(self):
-        """Archive that contains no .srt file causes SystemExit with code 1."""
+        """Archive that contains no .srt file raises RuntimeError."""
         buf = io.BytesIO()
         with py7zr.SevenZipFile(
             buf, mode="w", password="iBlm8NTigvru0Jr0"
@@ -154,9 +152,113 @@ class TestExtractSubtitlesFromArchive:
             archive.writestr(b"data", "nosubtitle.txt")
         buf.seek(0)
         archive_data = buf.read()
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(RuntimeError):
             self.module.extract_subtitles_from_archive(archive_data)
-        assert exc_info.value.code == 1
+
+
+
+# ---------------------------------------------------------------------------
+# Unit tests — download_subtitle (module API)
+# ---------------------------------------------------------------------------
+
+
+class TestDownloadSubtitle:
+    """Unit tests for the download_subtitle public API."""
+
+    def setup_method(self):
+        self.module = _load_module()
+
+    def test_invalid_hash_raises_value_error(self, tmp_path):
+        """Passing an invalid hash raises ValueError without writing any file."""
+        with pytest.raises(ValueError):
+            self.module.download_subtitle("not_a_valid_hash", tmp_path)
+        assert list(tmp_path.glob("*.srt")) == []
+
+    def test_default_filename_uses_hash_and_language(self, tmp_path, monkeypatch):
+        """When filename is None, the output file is named '{hash}_{language}.srt'."""
+        film_id = TEST_HASH
+        fake_content = b"1\r\n00:00:01,000 --> 00:00:02,000\r\nTest\r\n\r\n"
+
+        monkeypatch.setattr(
+            self.module,
+            "download_subtitles",
+            lambda fid, lang: fake_content,
+        )
+
+        result = self.module.download_subtitle(film_id, tmp_path)
+        expected = tmp_path / f"{film_id}_PL.srt"
+        assert result == expected
+        assert expected.read_bytes() == fake_content
+
+    def test_custom_filename_is_used(self, tmp_path, monkeypatch):
+        """When filename is provided, that name is used for the output file."""
+        fake_content = b"1\r\n00:00:01,000 --> 00:00:02,000\r\nTest\r\n\r\n"
+
+        monkeypatch.setattr(
+            self.module,
+            "download_subtitles",
+            lambda fid, lang: fake_content,
+        )
+
+        result = self.module.download_subtitle(TEST_HASH, tmp_path, filename="film.srt")
+        expected = tmp_path / "film.srt"
+        assert result == expected
+        assert expected.read_bytes() == fake_content
+
+    def test_outputdir_is_created_if_missing(self, tmp_path, monkeypatch):
+        """The output directory is created automatically when it does not exist."""
+        fake_content = b"sub"
+        monkeypatch.setattr(
+            self.module,
+            "download_subtitles",
+            lambda fid, lang: fake_content,
+        )
+
+        new_dir = tmp_path / "nested" / "dir"
+        assert not new_dir.exists()
+        result = self.module.download_subtitle(TEST_HASH, new_dir)
+        assert new_dir.exists()
+        assert result.parent == new_dir
+
+    def test_napiprojekt_uri_format_accepted(self, tmp_path, monkeypatch):
+        """napiprojekt:HASH URI format is accepted by the public API."""
+        fake_content = b"sub"
+        monkeypatch.setattr(
+            self.module,
+            "download_subtitles",
+            lambda fid, lang: fake_content,
+        )
+
+        result = self.module.download_subtitle(f"napiprojekt:{TEST_HASH}", tmp_path)
+        assert result.name == f"{TEST_HASH}_PL.srt"
+
+    def test_language_parameter_is_forwarded(self, tmp_path, monkeypatch):
+        """The language parameter is forwarded to download_subtitles and used in the filename."""
+        captured = {}
+        fake_content = b"sub"
+
+        def fake_download(fid, lang):
+            captured["lang"] = lang
+            return fake_content
+
+        monkeypatch.setattr(self.module, "download_subtitles", fake_download)
+
+        result = self.module.download_subtitle(TEST_HASH, tmp_path, language="EN")
+        assert captured["lang"] == "EN"
+        assert result.name == f"{TEST_HASH}_EN.srt"
+
+    def test_returns_path_object(self, tmp_path, monkeypatch):
+        """download_subtitle returns a pathlib.Path instance."""
+        import pathlib as _pathlib
+
+        monkeypatch.setattr(
+            self.module,
+            "download_subtitles",
+            lambda fid, lang: b"sub",
+        )
+
+        result = self.module.download_subtitle(TEST_HASH, tmp_path)
+        assert isinstance(result, _pathlib.Path)
 
 
 # ---------------------------------------------------------------------------

@@ -11,11 +11,13 @@ Usage:
 
 import argparse
 import io
+import pathlib
 import re
 import shutil
 import stat
 import subprocess
 import sys
+import typing
 from pathlib import Path
 
 
@@ -34,8 +36,7 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
     try:
         import py7zr
     except ImportError:
-        print("Error: Missing 'py7zr' library. Install: pip3 install py7zr")
-        sys.exit(1)
+        raise ImportError("Missing 'py7zr' library. Install: pip3 install py7zr")
 
     buf = io.BytesIO(data)
     with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
@@ -46,14 +47,12 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
             names = archive.namelist()
 
         if not names:
-            print("Error: Archive is empty.")
-            sys.exit(1)
+            raise RuntimeError("Archive is empty.")
 
         # Prefer the first .srt file in the archive
         srt_candidates = [name for name in names if name.lower().endswith(".srt")]
         if not srt_candidates:
-            print("Error: Archive does not contain an .srt subtitle file.")
-            sys.exit(1)
+            raise RuntimeError("Archive does not contain an .srt subtitle file.")
 
         target_name = srt_candidates[0]
 
@@ -71,8 +70,7 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
 
         file_buf = factory.buffers.get(target_name)
         if file_buf is None:
-            print("Error: Failed to read subtitle file from archive.")
-            sys.exit(1)
+            raise RuntimeError("Failed to read subtitle file from archive.")
 
         file_buf.seek(0)
         return file_buf.read()
@@ -225,11 +223,10 @@ def parse_id(argument: str) -> str:
         r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE
     )
     if not match:
-        print(f"Error: Invalid ID format: '{argument}'")
-        print(
+        raise ValueError(
+            f"Invalid ID format: '{argument}'. "
             "Expected: napiprojekt:07a1046ccddd59c0ffc7932331a16d63 or MD5 hash alone"
         )
-        sys.exit(1)
     return match.group(1).lower()
 
 
@@ -237,8 +234,7 @@ def download_subtitles(film_id: str, language: str = "PL") -> bytes:
     try:
         import requests
     except ImportError:
-        print("Error: Missing 'requests' library. Install: pip3 install requests")
-        sys.exit(1)
+        raise ImportError("Missing 'requests' library. Install: pip3 install requests")
 
     url = "http://napiprojekt.pl/api/api-napiprojekt3.php"
     payload = {
@@ -256,24 +252,58 @@ def download_subtitles(film_id: str, language: str = "PL") -> bytes:
         response = requests.post(url, data=payload, timeout=15)
         response.raise_for_status()
     except requests.exceptions.ConnectionError:
-        print("Error: No connection to napiprojekt.pl")
-        sys.exit(1)
+        raise ConnectionError("No connection to napiprojekt.pl")
     except requests.exceptions.Timeout:
-        print("Error: Response timeout exceeded")
-        sys.exit(1)
+        raise TimeoutError("Response timeout exceeded")
     except requests.exceptions.HTTPError as e:
-        print(f"HTTP Error: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"HTTP Error: {e}")
 
     if response.content[:4] == b"NPc0":
-        print("Error: Subtitles not found for given ID.")
-        sys.exit(1)
+        raise RuntimeError("Subtitles not found for given ID.")
 
     content = response.content
     if len(content) >= 6 and content[:6] == _SEVEN_ZIP_MAGIC:
         content = extract_subtitles_from_archive(content)
 
     return content
+
+
+# ---------------------------------------------------------------------------
+# Public Module API
+# ---------------------------------------------------------------------------
+
+
+def download_subtitle(
+    hash: str,
+    outputdir: typing.Union[str, pathlib.Path],
+    filename: typing.Optional[str] = None,
+    language: str = "PL",
+) -> pathlib.Path:
+    """Download subtitles from NapiProjekt and save them to a file.
+
+    Args:
+        hash: Film hash in MD5 format or ``napiprojekt:HASH`` URI format.
+        outputdir: Directory where the subtitle file will be saved.
+        filename: Output filename. Defaults to ``{hash}_{language}.srt``.
+        language: Subtitle language code, e.g. ``'PL'``, ``'EN'`` (default: ``'PL'``).
+
+    Returns:
+        :class:`pathlib.Path` pointing to the saved subtitle file.
+
+    Raises:
+        ValueError: If *hash* is not a valid MD5 hash or napiprojekt URI.
+        ConnectionError: If the connection to napiprojekt.pl fails.
+        TimeoutError: If the request to napiprojekt.pl times out.
+        RuntimeError: If the API returns an error or the archive is malformed.
+    """
+    film_id = parse_id(hash)
+    output_dir = pathlib.Path(outputdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_filename = filename if filename is not None else f"{film_id}_{language}.srt"
+    output_path = output_dir / output_filename
+    content = download_subtitles(film_id, language)
+    output_path.write_bytes(content)
+    return output_path
 
 
 # ---------------------------------------------------------------------------
@@ -337,11 +367,21 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    film_id = parse_id(args.film_id)
+    try:
+        film_id = parse_id(args.film_id)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
     filename = args.output or f"{film_id}_{args.language}.srt"
 
     print(f"Downloading subtitles: {film_id} [{args.language}]")
-    content = download_subtitles(film_id, args.language)
+    try:
+        content = download_subtitles(film_id, args.language)
+    except (ImportError, ConnectionError, TimeoutError, RuntimeError) as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
     Path(filename).write_bytes(content)
     print(f"OK: Saved: {Path(filename).resolve()}")
 
