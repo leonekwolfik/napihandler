@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build-and-test:
@@ -125,3 +126,61 @@ jobs:
             dist/napihandler-macos-arm64/napihandler-macos-arm64
             dist/napihandler-windows-x86_64.exe/napihandler-windows-x86_64.exe
           fail_on_unmatched_files: true
+
+  publish-docker:
+    name: Publish Docker Image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download linux/amd64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: napihandler-linux-x86_64
+          path: dist/napihandler-linux-x86_64/
+
+      - name: Download linux/arm64 artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: napihandler-linux-arm64
+          path: dist/napihandler-linux-arm64/
+
+      - name: Prepare binaries for Docker build
+        run: |
+          mkdir -p dist/linux-amd64 dist/linux-arm64
+          cp dist/napihandler-linux-x86_64/napihandler-linux-x86_64 dist/linux-amd64/napihandler
+          cp dist/napihandler-linux-arm64/napihandler-linux-arm64 dist/linux-arm64/napihandler
+          chmod +x dist/linux-amd64/napihandler dist/linux-arm64/napihandler
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
