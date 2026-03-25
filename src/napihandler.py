@@ -10,14 +10,64 @@ Usage:
 """
 
 import argparse
+import io
 import re
 import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
+# ---------------------------------------------------------------------------
+# Archive handling
+# ---------------------------------------------------------------------------
+
+_SEVEN_ZIP_MAGIC = b"7z\xbc\xaf\x27\x1c"
+# Publicly documented NapiProjekt archive password, see:
+# https://github.com/emkor/napi-py/blob/master/napi/read_7z.py
+NAPI_ARCHIVE_PASSWORD = "iBlm8NTigvru0Jr0"
+
+
+def extract_subtitles_from_archive(data: bytes) -> bytes:
+    """Extract SRT content from a password-protected 7-zip archive."""
+    try:
+        import py7zr
+    except ImportError:
+        print("Error: Missing 'py7zr' library. Install: pip3 install py7zr")
+        sys.exit(1)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        buf = io.BytesIO(data)
+        try:
+            with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
+    buf = io.BytesIO(data)
+    with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
+        # Get list of member names
+        try:
+            names = archive.getnames()
+        except AttributeError:
+            names = archive.namelist()
+
+        if not names:
+            print("Error: Archive is empty.")
+            sys.exit(1)
+
+        # Prefer the first .srt file in the archive
+        srt_candidates = [name for name in names if name.lower().endswith(".srt")]
+        if not srt_candidates:
+            print("Error: Archive does not contain an .srt subtitle file.")
+            sys.exit(1)
+
+        target_name = srt_candidates[0]
+        files = archive.read([target_name])
+        file_obj = files.get(target_name)
+        if file_obj is None:
+            print("Error: Failed to read subtitle file from archive.")
+            sys.exit(1)
+
+        return file_obj.read()
 # ---------------------------------------------------------------------------
 # Protocol Registration
 # ---------------------------------------------------------------------------
@@ -211,7 +261,11 @@ def download_subtitles(film_id: str, language: str = "PL") -> bytes:
         print("Error: Subtitles not found for given ID.")
         sys.exit(1)
 
-    return response.content
+    content = response.content
+    if len(content) >= 6 and content[:6] == _SEVEN_ZIP_MAGIC:
+        content = extract_subtitles_from_archive(content)
+
+    return content
 
 
 # ---------------------------------------------------------------------------
