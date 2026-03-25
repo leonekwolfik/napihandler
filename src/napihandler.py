@@ -40,13 +40,17 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
 
     with tempfile.TemporaryDirectory() as tmpdir:
         buf = io.BytesIO(data)
-        with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
-            names = archive.namelist()
-            if not names:
-                print("Error: Archive is empty.")
-                sys.exit(1)
-            archive.extractall(path=tmpdir)
-        return (Path(tmpdir) / names[0]).read_bytes()
+        try:
+            with py7zr.SevenZipFile(buf, mode="r", password=NAPI_ARCHIVE_PASSWORD) as archive:
+                names = archive.namelist()
+                if not names:
+                    print("Error: Archive is empty.")
+                    sys.exit(1)
+                archive.extractall(path=tmpdir)
+            return (Path(tmpdir) / names[0]).read_bytes()
+        except Exception as exc:
+            print(f"Error: Failed to extract subtitles from archive: {exc}")
+            sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
