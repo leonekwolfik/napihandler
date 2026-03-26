@@ -30,6 +30,9 @@ _SEVEN_ZIP_MAGIC = b"7z\xbc\xaf\x27\x1c"
 # https://github.com/emkor/napi-py/blob/master/napi/read_7z.py
 NAPI_ARCHIVE_PASSWORD = "iBlm8NTigvru0Jr0"
 
+# Pre-compiled regex for ID validation — avoids recompiling on every call.
+_ID_RE = re.compile(r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", re.IGNORECASE)
+
 
 def extract_subtitles_from_archive(data: bytes) -> bytes:
     """Extract SRT content from a password-protected 7-zip archive."""
@@ -56,7 +59,8 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
 
         target_name = srt_candidates[0]
 
-        # Use WriterFactory to extract the target file into memory
+        # Use WriterFactory to extract only the target file into memory,
+        # skipping any other files present in the archive.
         class InMemoryWriterFactory(py7zr.WriterFactory):
             def __init__(self):
                 self.buffers = {}
@@ -66,7 +70,7 @@ def extract_subtitles_from_archive(data: bytes) -> bytes:
                 return self.buffers[filename]
 
         factory = InMemoryWriterFactory()
-        archive.extractall(factory=factory)
+        archive.extract(targets=[target_name], factory=factory)
 
         file_buf = factory.buffers.get(target_name)
         if file_buf is None:
@@ -224,9 +228,7 @@ def _default_subtitle_filename(film_id: str, language: str) -> str:
 
 def parse_id(argument: str) -> str:
     """Accepts 'napiprojekt:HASH', 'napiprojekt://HASH' or MD5 hash alone."""
-    match = re.match(
-        r"^(?:napiprojekt:(?://)?)?([a-f0-9]{32})$", argument.strip(), re.IGNORECASE
-    )
+    match = _ID_RE.match(argument.strip())
     if not match:
         raise ValueError(
             f"Invalid ID format: '{argument}'. "
@@ -263,10 +265,10 @@ def download_subtitles(film_id: str, language: str = "PL") -> bytes:
     except requests.exceptions.HTTPError as e:
         raise RuntimeError(f"HTTP Error: {e}")
 
-    if response.content[:4] == b"NPc0":
+    content = response.content
+    if content[:4] == b"NPc0":
         raise RuntimeError("Subtitles not found for given ID.")
 
-    content = response.content
     if len(content) >= 6 and content[:6] == _SEVEN_ZIP_MAGIC:
         content = extract_subtitles_from_archive(content)
 
@@ -387,8 +389,9 @@ def main():
         print(f"Error: {e}")
         sys.exit(1)
 
-    Path(filename).write_bytes(content)
-    print(f"OK: Saved: {Path(filename).resolve()}")
+    output_path = Path(filename)
+    output_path.write_bytes(content)
+    print(f"OK: Saved: {output_path.resolve()}")
 
 
 if __name__ == "__main__":
