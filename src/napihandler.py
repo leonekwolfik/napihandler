@@ -217,6 +217,11 @@ def register():
 # ---------------------------------------------------------------------------
 
 
+def _default_subtitle_filename(film_id: str, language: str) -> str:
+    """Return the default subtitle filename for *film_id* and *language*."""
+    return f"{film_id}_{language}.srt"
+
+
 def parse_id(argument: str) -> str:
     """Accepts 'napiprojekt:HASH', 'napiprojekt://HASH' or MD5 hash alone."""
     match = re.match(
@@ -299,7 +304,7 @@ def download_subtitle(
     film_id = parse_id(hash)
     output_dir = pathlib.Path(outputdir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_filename = filename if filename is not None else f"{film_id}_{language}.srt"
+    output_filename = filename if filename is not None else _default_subtitle_filename(film_id, language)
     output_path = output_dir / output_filename
     content = download_subtitles(film_id, language)
     output_path.write_bytes(content)
@@ -373,7 +378,7 @@ def main():
         print(f"Error: {e}")
         sys.exit(1)
 
-    filename = args.output or f"{film_id}_{args.language}.srt"
+    filename = args.output or _default_subtitle_filename(film_id, args.language)
 
     print(f"Downloading subtitles: {film_id} [{args.language}]")
     try:

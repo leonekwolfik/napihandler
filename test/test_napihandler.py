@@ -37,6 +37,10 @@ def _load_module():
     return module
 
 
+# Module loaded once for all unit tests; monkeypatch reverts per-test mutations.
+_MODULE = _load_module()
+
+
 def _run(*args, cwd=None):
     """Run napihandler.py with *args and return the CompletedProcess."""
     return subprocess.run(
@@ -55,34 +59,31 @@ def _run(*args, cwd=None):
 class TestParseId:
     """Unit tests for the parse_id helper function."""
 
-    def setup_method(self):
-        self.module = _load_module()
-
     def test_hash_only(self):
         """Plain MD5 hash is accepted and returned as-is (lowercased)."""
-        assert self.module.parse_id(TEST_HASH) == TEST_HASH
+        assert _MODULE.parse_id(TEST_HASH) == TEST_HASH
 
     def test_napiprojekt_prefix(self):
         """napiprojekt:HASH format is accepted."""
-        assert self.module.parse_id(f"napiprojekt:{TEST_HASH}") == TEST_HASH
+        assert _MODULE.parse_id(f"napiprojekt:{TEST_HASH}") == TEST_HASH
 
     def test_napiprojekt_url_format(self):
         """napiprojekt://HASH format is accepted."""
-        assert self.module.parse_id(f"napiprojekt://{TEST_HASH}") == TEST_HASH
+        assert _MODULE.parse_id(f"napiprojekt://{TEST_HASH}") == TEST_HASH
 
     def test_uppercase_normalized_to_lowercase(self):
         """Hash is normalised to lowercase regardless of input case."""
-        assert self.module.parse_id(TEST_HASH.upper()) == TEST_HASH
+        assert _MODULE.parse_id(TEST_HASH.upper()) == TEST_HASH
 
     def test_invalid_format_exits(self):
         """Invalid value raises ValueError."""
         with pytest.raises(ValueError):
-            self.module.parse_id("not_a_valid_hash")
+            _MODULE.parse_id("not_a_valid_hash")
 
     def test_too_short_hash_exits(self):
         """Hash that is too short raises ValueError."""
         with pytest.raises(ValueError):
-            self.module.parse_id("07a1046c")
+            _MODULE.parse_id("07a1046c")
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +104,7 @@ def _make_archive(filename: str, content: bytes) -> bytes:
     named *filename* with the given *content*."""
     buf = io.BytesIO()
     with py7zr.SevenZipFile(
-        buf, mode="w", password="iBlm8NTigvru0Jr0"
+        buf, mode="w", password=_MODULE.NAPI_ARCHIVE_PASSWORD
     ) as archive:
         archive.writestr(content, filename)
     buf.seek(0)
@@ -113,19 +114,16 @@ def _make_archive(filename: str, content: bytes) -> bytes:
 class TestExtractSubtitlesFromArchive:
     """Unit tests for extract_subtitles_from_archive."""
 
-    def setup_method(self):
-        self.module = _load_module()
-
     def test_srt_content_is_extracted_correctly(self):
         """Extracted bytes match the original SRT content placed in the archive."""
         archive_data = _make_archive("film.srt", _SAMPLE_SRT)
-        result = self.module.extract_subtitles_from_archive(archive_data)
+        result = _MODULE.extract_subtitles_from_archive(archive_data)
         assert result == _SAMPLE_SRT
 
     def test_extracted_content_is_readable_as_text(self):
         """Extracted bytes can be decoded as UTF-8 text and contain SRT markers."""
         archive_data = _make_archive("subtitle.srt", _SAMPLE_SRT)
-        result = self.module.extract_subtitles_from_archive(archive_data)
+        result = _MODULE.extract_subtitles_from_archive(archive_data)
         text = result.decode("utf-8")
         assert "-->" in text, "Expected SRT timestamp separator '-->' in output"
 
@@ -134,26 +132,26 @@ class TestExtractSubtitlesFromArchive:
         srt_bytes = b"1\r\n00:00:00,000 --> 00:00:01,000\r\nHello\r\n\r\n"
         buf = io.BytesIO()
         with py7zr.SevenZipFile(
-            buf, mode="w", password="iBlm8NTigvru0Jr0"
+            buf, mode="w", password=_MODULE.NAPI_ARCHIVE_PASSWORD
         ) as archive:
             archive.writestr(b"some metadata", "info.txt")
             archive.writestr(srt_bytes, "movie.srt")
         buf.seek(0)
         archive_data = buf.read()
-        result = self.module.extract_subtitles_from_archive(archive_data)
+        result = _MODULE.extract_subtitles_from_archive(archive_data)
         assert result == srt_bytes
 
     def test_archive_without_srt_exits(self):
         """Archive that contains no .srt file raises RuntimeError."""
         buf = io.BytesIO()
         with py7zr.SevenZipFile(
-            buf, mode="w", password="iBlm8NTigvru0Jr0"
+            buf, mode="w", password=_MODULE.NAPI_ARCHIVE_PASSWORD
         ) as archive:
             archive.writestr(b"data", "nosubtitle.txt")
         buf.seek(0)
         archive_data = buf.read()
         with pytest.raises(RuntimeError):
-            self.module.extract_subtitles_from_archive(archive_data)
+            _MODULE.extract_subtitles_from_archive(archive_data)
 
 
 
@@ -165,13 +163,10 @@ class TestExtractSubtitlesFromArchive:
 class TestDownloadSubtitle:
     """Unit tests for the download_subtitle public API."""
 
-    def setup_method(self):
-        self.module = _load_module()
-
     def test_invalid_hash_raises_value_error(self, tmp_path):
         """Passing an invalid hash raises ValueError without writing any file."""
         with pytest.raises(ValueError):
-            self.module.download_subtitle("not_a_valid_hash", tmp_path)
+            _MODULE.download_subtitle("not_a_valid_hash", tmp_path)
         assert list(tmp_path.glob("*.srt")) == []
 
     def test_default_filename_uses_hash_and_language(self, tmp_path, monkeypatch):
@@ -180,12 +175,12 @@ class TestDownloadSubtitle:
         fake_content = b"1\r\n00:00:01,000 --> 00:00:02,000\r\nTest\r\n\r\n"
 
         monkeypatch.setattr(
-            self.module,
+            _MODULE,
             "download_subtitles",
             lambda fid, lang: fake_content,
         )
 
-        result = self.module.download_subtitle(film_id, tmp_path)
+        result = _MODULE.download_subtitle(film_id, tmp_path)
         expected = tmp_path / f"{film_id}_PL.srt"
         assert result == expected
         assert expected.read_bytes() == fake_content
@@ -195,12 +190,12 @@ class TestDownloadSubtitle:
         fake_content = b"1\r\n00:00:01,000 --> 00:00:02,000\r\nTest\r\n\r\n"
 
         monkeypatch.setattr(
-            self.module,
+            _MODULE,
             "download_subtitles",
             lambda fid, lang: fake_content,
         )
 
-        result = self.module.download_subtitle(TEST_HASH, tmp_path, filename="film.srt")
+        result = _MODULE.download_subtitle(TEST_HASH, tmp_path, filename="film.srt")
         expected = tmp_path / "film.srt"
         assert result == expected
         assert expected.read_bytes() == fake_content
@@ -209,14 +204,14 @@ class TestDownloadSubtitle:
         """The output directory is created automatically when it does not exist."""
         fake_content = b"sub"
         monkeypatch.setattr(
-            self.module,
+            _MODULE,
             "download_subtitles",
             lambda fid, lang: fake_content,
         )
 
         new_dir = tmp_path / "nested" / "dir"
         assert not new_dir.exists()
-        result = self.module.download_subtitle(TEST_HASH, new_dir)
+        result = _MODULE.download_subtitle(TEST_HASH, new_dir)
         assert new_dir.exists()
         assert result.parent == new_dir
 
@@ -224,12 +219,12 @@ class TestDownloadSubtitle:
         """napiprojekt:HASH URI format is accepted by the public API."""
         fake_content = b"sub"
         monkeypatch.setattr(
-            self.module,
+            _MODULE,
             "download_subtitles",
             lambda fid, lang: fake_content,
         )
 
-        result = self.module.download_subtitle(f"napiprojekt:{TEST_HASH}", tmp_path)
+        result = _MODULE.download_subtitle(f"napiprojekt:{TEST_HASH}", tmp_path)
         assert result.name == f"{TEST_HASH}_PL.srt"
 
     def test_language_parameter_is_forwarded(self, tmp_path, monkeypatch):
@@ -241,9 +236,9 @@ class TestDownloadSubtitle:
             captured["lang"] = lang
             return fake_content
 
-        monkeypatch.setattr(self.module, "download_subtitles", fake_download)
+        monkeypatch.setattr(_MODULE, "download_subtitles", fake_download)
 
-        result = self.module.download_subtitle(TEST_HASH, tmp_path, language="EN")
+        result = _MODULE.download_subtitle(TEST_HASH, tmp_path, language="EN")
         assert captured["lang"] == "EN"
         assert result.name == f"{TEST_HASH}_EN.srt"
 
@@ -252,12 +247,12 @@ class TestDownloadSubtitle:
         import pathlib as _pathlib
 
         monkeypatch.setattr(
-            self.module,
+            _MODULE,
             "download_subtitles",
             lambda fid, lang: b"sub",
         )
 
-        result = self.module.download_subtitle(TEST_HASH, tmp_path)
+        result = _MODULE.download_subtitle(TEST_HASH, tmp_path)
         assert isinstance(result, _pathlib.Path)
 
 
