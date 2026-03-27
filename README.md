@@ -6,18 +6,23 @@ Pobiera napisy z [NapiProjekt](http://napiprojekt.pl) przez protokół `napiproj
 
 Pobierz binarkę z [Releases](../../releases) i umieść w PATH:
 
+### Linux
 ```bash
-# Linux
 chmod +x napihandler-linux-x86_64
 sudo mv napihandler-linux-x86_64 /usr/local/bin/napihandler
+```
 
-# macOS
+### macOS
+```bash
 chmod +x napihandler-macos-arm64   # lub napihandler-macos-x86_64 dla Intel
 xattr -d com.apple.quarantine napihandler-macos-arm64
 sudo mv napihandler-macos-arm64 /usr/local/bin/napihandler
+```
 
-# Windows
+### Windows
+```bash
 # Umieść napihandler-windows-x86_64.exe w wybranym folderze
+# Dodaj ten folder do zmiennej środowiskowej PATH, aby móc uruchamiać napihandler z dowolnego miejsca
 ```
 
 > **macOS – błąd „Apple nie może zweryfikować"**: macOS blokuje pobrane binarki bez certyfikatu Apple Developer.
